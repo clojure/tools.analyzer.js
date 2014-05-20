@@ -1,6 +1,6 @@
 (defproject org.clojure/tools.analyzer.js "0.1.0-SNAPSHOT"
   :description "Provides js-specific passes for tools.analyzer."
-  :url "https://github.com/clojure/tools.analyzer.jvm"
+  :url "https://github.com/clojure/tools.analyzer.js"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :source-paths ["src/main/clojure"]
