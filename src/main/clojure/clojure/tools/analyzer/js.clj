@@ -11,7 +11,7 @@
   (:refer-clojure :exclude [macroexpand-1 var?])
   (:require [clojure.tools.analyzer
              :as ana
-             :refer [analyze]
+             :refer [analyze analyze-in-env ctx]
              :rename {analyze -analyze}]
             [clojure.tools.analyzer.utils :refer [resolve-var]]
             cljs.tagged-literals)
@@ -85,7 +85,21 @@
 (defn var? [x]
   (instance? Var x))
 
-(declare analyze-js-value)
+(defn analyze-js-value
+  [form env]
+  (let [val (.val ^JSValue form)
+        items-env (ctx env :expr)
+        items (if (map? val)
+                (zipmap (keys val)
+                        (mapv (analyze-in-env items-env) (vals val)))
+                (mapv (analyze-in-env items-env) val))]
+    {:op       :js-value
+     :js-type  (if (map? val) :object :array)
+     :env      env
+     :items    items
+     :form     form
+     :children [:items]}))
+
 (defn analyze-form
   [form env]
   (if (instance? JSValue form)
