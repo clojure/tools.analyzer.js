@@ -32,7 +32,7 @@
 (defn empty-env
   "Returns an empty env map"
   []
-  {:context    :expr
+  {:context    :statement
    :locals     {}
    :ns         'cljs.user
    :namespaces (atom '{cljs.user {:mappings {}
@@ -90,7 +90,6 @@
   [form env]
   (let [val (.val ^JSValue form)
         items-env (ctx env :expr)]
-
     (if (map? val)
       ;; keys should always be symbols/kewords, do we really need to analyze them?
       {:op       :js-object
@@ -110,6 +109,38 @@
   (if (instance? JSValue form)
     (analyze-js-value form env)
     (ana/-analyze-form form env)))
+
+(deftype Type [name namespace fields])
+
+(defn parse-type
+  [op [_ name fields pmasks :as form] {:keys [ns namespaces] :as env}]
+  (let [fields-expr (mapv (fn [name]
+                            {:env     env
+                             :form    name
+                             :name    name
+                             :mutable (:mutable (meta name))
+                             :local   :field
+                             :op      :binding})
+                          fields)]
+    ;; TODO:
+    ;; handle (-> name meta :protocols)
+    (swap! namespaces assoc-in [ns :mappings name] (->Type name ns fields))
+
+    {:op       op
+     :env      env
+     :form     form
+     :name     name
+     :fields   fields-expr
+     :pmasks   pmasks
+     :children [:fields]}))
+
+(defmethod parse 'deftype*
+  [form env]
+  (parse-type :deftype form env))
+
+(defmethod parse 'defrecord*
+  [form env]
+  (parse-type :defrecord form env))
 
 (defn analyze
   ([form] (analyze form (empty-env) {}))
