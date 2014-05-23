@@ -11,9 +11,9 @@
   (:refer-clojure :exclude [macroexpand-1 var?])
   (:require [clojure.tools.analyzer
              :as ana
-             :refer [analyze analyze-in-env ctx]
+             :refer [analyze analyze-in-env]
              :rename {analyze -analyze}]
-            [clojure.tools.analyzer.utils :refer [resolve-var]]
+            [clojure.tools.analyzer.utils :refer [resolve-var ctx]]
             cljs.tagged-literals)
   (:import cljs.tagged_literals.JSValue))
 
