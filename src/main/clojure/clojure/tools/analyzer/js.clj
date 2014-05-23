@@ -85,20 +85,25 @@
 (defn var? [x]
   (instance? Var x))
 
+;; can it be :literal ?
 (defn analyze-js-value
   [form env]
   (let [val (.val ^JSValue form)
-        items-env (ctx env :expr)
-        items (if (map? val)
-                (zipmap (keys val)
-                        (mapv (analyze-in-env items-env) (vals val)))
-                (mapv (analyze-in-env items-env) val))]
-    {:op       :js-value
-     :js-type  (if (map? val) :object :array)
-     :env      env
-     :items    items
-     :form     form
-     :children [:items]}))
+        items-env (ctx env :expr)]
+
+    (if (map? val)
+      ;; keys should always be symbols/kewords, do we really need to analyze them?
+      {:op       :js-object
+       :env      env
+       :keys     (mapv (analyze-in-env items-env) (keys val))
+       :vals     (mapv (analyze-in-env items-env) (vals val))
+       :form     form
+       :children [:keys :vals]}
+      {:op       :js-array
+       :env      env
+       :items    (mapv (analyze-in-env items-env) val)
+       :form     form
+       :children [:items]})))
 
 (defn analyze-form
   [form env]
