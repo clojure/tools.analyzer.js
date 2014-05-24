@@ -110,7 +110,7 @@
     (analyze-js-value form env)
     (ana/-analyze-form form env)))
 
-(deftype Type [name namespace fields])
+(deftype Type [name namespace fields protocols])
 
 (defn parse-type
   [op [_ name fields pmasks :as form] {:keys [ns namespaces] :as env}]
@@ -121,18 +121,19 @@
                              :mutable (:mutable (meta name))
                              :local   :field
                              :op      :binding})
-                          fields)]
-    ;; TODO:
-    ;; handle (-> name meta :protocols)
-    (swap! namespaces assoc-in [ns :mappings name] (->Type name ns fields))
+                          fields)
+        protocols (-> name meta :protocols)]
 
-    {:op       op
-     :env      env
-     :form     form
-     :name     name
-     :fields   fields-expr
-     :pmasks   pmasks
-     :children [:fields]}))
+    (swap! namespaces assoc-in [ns :mappings name] (->Type name ns fields protocols))
+
+    {:op        op
+     :env       env
+     :form      form
+     :name      name
+     :fields    fields-expr
+     :pmasks    pmasks
+     :protocols protocols
+     :children  [:fields]}))
 
 (defmethod parse 'deftype*
   [form env]
