@@ -13,7 +13,7 @@
              :as ana
              :refer [analyze analyze-in-env]
              :rename {analyze -analyze}]
-            [clojure.tools.analyzer.utils :refer [resolve-var ctx]]
+            [clojure.tools.analyzer.utils :refer [resolve-var ctx -source-info]]
             cljs.tagged-literals)
   (:import cljs.tagged_literals.JSValue))
 
@@ -142,6 +142,29 @@
 (defmethod parse 'defrecord*
   [form env]
   (parse-type :defrecord form env))
+
+;; no ~{foo} support since cljs itself doesn't use it anywhere
+(defmethod parse 'js*
+  [[_ jsform & args :as form] env]
+  (when-not (string? jsform)
+    (throw (ex-info "Invalid js* form"
+                    (merge {:form form}
+                           (-source-info form env)))))
+  (let [segs  (loop [segs [] ^String s jsform]
+                (let [idx (.indexOf s "~{")]
+                  (if (= -1 idx)
+                    (conj segs s)
+                    (recur (conj segs (subs s 0 idx))
+                           (subs s (inc (.indexOf s "}" idx)))))))
+        exprs (mapv (analyze-in-env (ctx env :expr)) args)]
+    (merge
+     {:op       :js
+      :env      env
+      :form     form
+      :segs     segs}
+     (when args
+       {:args     exprs
+        :children [:args]}))))
 
 (defn analyze
   ([form] (analyze form (empty-env) {}))
