@@ -14,6 +14,7 @@
              :refer [analyze analyze-in-env]
              :rename {analyze -analyze}]
             [clojure.tools.analyzer.utils :refer [resolve-var ctx -source-info]]
+            [clojure.tools.analyzer.js.utils :refer [desugar-ns-specs]]
             cljs.tagged-literals)
   (:import cljs.tagged_literals.JSValue))
 
@@ -66,6 +67,7 @@
     (let [op (first form)]
       (if (specials op)
         form
+        ;; TODO: handle :require/:use-macros
         (let [v (resolve-var op env)
               clj-var (clojure.core/resolve op)]
           (if (and clj-var
@@ -165,6 +167,22 @@
      (when args
        {:args     exprs
         :children [:args]}))))
+
+(defmethod parse 'ns
+  [[_ name & args :as form] env]
+  (when-not (symbol? name)
+    (throw (ex-info (str "Namespaces must be named by a symbol, had: "
+                         (.getName ^Class (class name)))
+                    (merge {:form form}
+                           (-source-info form env)))))
+  (let [[docstring & args] (if (string? (first args))
+                             args
+                             (cons nil args))
+        [metadata & args]  (if (map? (first args))
+                             args
+                             (cons {} args))
+        ns-opts (reduce (fn [m [k & specs]] (assoc m k specs)) {} args)
+        ns-opts (desugar-ns-specs ns-opts)]))
 
 (defn analyze
   ([form] (analyze form (empty-env) {}))
