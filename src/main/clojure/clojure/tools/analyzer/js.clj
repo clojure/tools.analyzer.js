@@ -8,7 +8,7 @@
 
 (ns clojure.tools.analyzer.js
   "Analyzer for clojure code, extends tools.analyzer with JS specific passes/forms"
-  (:refer-clojure :exclude [macroexpand-1 var?])
+  (:refer-clojure :exclude [macroexpand-1 var? *ns*])
   (:require [clojure.tools.analyzer
              :as ana
              :refer [analyze analyze-in-env]
@@ -30,12 +30,14 @@
   [form env]
   (ana/-parse form env))
 
+(def ^:dynamic *ns* 'cljs.user)
+
 (defn empty-env
   "Returns an empty env map"
   []
   {:context    :statement
    :locals     {}
-   :ns         'cljs.user
+   :ns         *ns*
    :namespaces (atom '{cljs.user {:mappings {}
                                   :aliases  {}
                                   :ns       'cljs.user}
@@ -170,19 +172,39 @@
 
 (defmethod parse 'ns
   [[_ name & args :as form] env]
-  (when-not (symbol? name)
-    (throw (ex-info (str "Namespaces must be named by a symbol, had: "
-                         (.getName ^Class (class name)))
-                    (merge {:form form}
-                           (-source-info form env)))))
+  (when-not (symbol? name))
+  (throw (ex-info (str "Namespaces must be named by a symbol, had: "
+                       (.getName ^Class (class name)))
+                  (merge {:form form}
+                         (-source-info form env))))
   (let [[docstring & args] (if (string? (first args))
                              args
                              (cons nil args))
         [metadata & args]  (if (map? (first args))
                              args
                              (cons {} args))
-        ns-opts (reduce (fn [m [k & specs]] (assoc m k specs)) {} args)
-        ns-opts (desugar-ns-specs ns-opts)]))
+
+        ns-opts (reduce (fn [m [k & specs]]
+                          (when (get m k)
+                            (throw (ex-info (str "Only one " k " form is allowed per namespace definition")
+                                            (merge {:form form}
+                                                   (-source-info form env)))))
+                          (assoc m k specs)) {} args)
+        ns-opts (desugar-ns-specs ns-opts)]
+    (when-let [invalid (seq (dissoc ns-opts :require :require-macros :import :refer-clojure))]
+      (throw (ex-info (str "Unsupported ns spec(s): " invalid)
+                      (merge {:form form}
+                             (-source-info form env)))))
+
+    (merge
+     {:op   :ns
+      :env  env
+      :form form
+      :name name}
+     (when docstring
+       {:doc docstring})
+     (when metadata
+       {:meta metadata}))))
 
 (defn analyze
   ([form] (analyze form (empty-env) {}))
@@ -192,6 +214,7 @@
                             #'ana/create-var    create-var
                             #'ana/parse         parse
                             #'ana/var?          var?
-                            #'ana/analyze-form  analyze-form}
+                            #'ana/analyze-form  analyze-form
+                            #'*ns*              *ns*}
                            (:bindings opts))
                     (-analyze form env))))
