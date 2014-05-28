@@ -14,7 +14,7 @@
              :refer [analyze analyze-in-env]
              :rename {analyze -analyze}]
             [clojure.tools.analyzer.utils :refer [resolve-var ctx -source-info]]
-            [clojure.tools.analyzer.js.utils :refer [desugar-ns-specs]]
+            [clojure.tools.analyzer.js.utils :refer [desugar-ns-specs validate-ns-specs populate-env]]
             cljs.tagged-literals)
   (:import cljs.tagged_literals.JSValue))
 
@@ -80,14 +80,14 @@
             (desugar-host-expr form)))))
         form))
 
-(defrecord Var [name namespace])
-
 (defn create-var
   [sym {:keys [ns]}]
-  (->Var sym ns))
+  {:op   :var
+   :name sym
+   :ns   ns})
 
 (defn var? [x]
-  (instance? Var x))
+  (= :var (:op x)))
 
 ;; can it be :literal ?
 (defn analyze-js-value
@@ -114,8 +114,6 @@
     (analyze-js-value form env)
     (ana/-analyze-form form env)))
 
-(deftype Type [name namespace fields protocols])
-
 (defn parse-type
   [op [_ name fields pmasks :as form] {:keys [ns namespaces] :as env}]
   (let [fields-expr (mapv (fn [name]
@@ -128,7 +126,12 @@
                           fields)
         protocols (-> name meta :protocols)]
 
-    (swap! namespaces assoc-in [ns :mappings name] (->Type name ns fields protocols))
+    (swap! namespaces assoc-in [ns :mappings name]
+           {:op        :type
+            :name      name
+            :ns        ns
+            :fields    fields
+            :protocols protocols})
 
     {:op        op
      :env       env
@@ -190,17 +193,15 @@
                                             (merge {:form form}
                                                    (-source-info form env)))))
                           (assoc m k specs)) {} args)
-        ns-opts (desugar-ns-specs ns-opts)]
-    (when-let [invalid (seq (dissoc ns-opts :require :require-macros :import :refer-clojure))]
-      (throw (ex-info (str "Unsupported ns spec(s): " invalid)
-                      (merge {:form form}
-                             (-source-info form env)))))
-
+        ns-opts (doto (desugar-ns-specs ns-opts)
+                  (validate-ns-specs form env)
+                  (populate-env name env))]
     (merge
-     {:op   :ns
-      :env  env
-      :form form
-      :name name}
+     {:op      :ns
+      :env     env
+      :form    form
+      :name    name
+      :depends (set (map first (:require ns-opts)))}
      (when docstring
        {:doc docstring})
      (when metadata
