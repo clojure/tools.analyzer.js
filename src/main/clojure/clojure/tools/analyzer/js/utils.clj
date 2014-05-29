@@ -12,45 +12,57 @@
 
 (defn desugar-macros [{:keys [require] :as ns-opts}]
   (let [sugar-keys #{:include-macros :refer-macros}]
-    (reduce (fn [ns-opts [ns & opts :as spec]]
-              (if (some sugar-keys spec)
-                (let [{:keys [refer-macros] :as opts} (apply hash-map opts)]
-                  (-> ns-opts
-                    (update-in [:require] conj (into [ns] (apply dissoc opts sugar-keys)))
-                    (update-in [:require-macros] (fnil conj [])
-                               (into [ns] (when refer-macros [:refer refer-macros])))))
-                (update-in ns-opts [:require] conj spec)))
-            (assoc ns-opts :require []) require)))
+    (reduce-kv (fn [ns-opts ns opts]
+                 (if (seq (select-keys opts sugar-keys))
+                   (let [{:keys [refer-macros]} opts]
+                     (-> ns-opts
+                       (update-in [:require] assoc ns (apply dissoc opts sugar-keys))
+                       (update-in [:require-macros] assoc ns (if refer-macros {:refer refer-macros} {}))))
+                   ns-opts))
+               ns-opts require)))
 
 ;;TODO: assumes the libspecs are valid, crashes otherwise
 ;; needs to validate them
 (defn desugar-use [{:keys [use use-macros] :as ns-opts}]
   (let [ns-opts (reduce (fn [ns-opts [lib only syms]]
-                          (update-in ns-opts [:require] (fnil conj []) [lib :refer syms]))
+                          (update-in ns-opts [:require] assoc lib {:refer syms}))
                         ns-opts use)]
     (reduce (fn [ns-opts [lib only syms]]
-              (update-in ns-opts [:require-macros] (fnil conj []) [lib :refer syms]))
+              (update-in ns-opts [:require-macros] assoc lib {:refer syms}))
             ns-opts use)))
 
-(defn desugar-import [{:keys [import] :as ns-opts}]
-  (reduce (fn [ns-opts import]
+(defn desugar-import [imports]
+  (reduce (fn [imports import]
             (if (symbol? import)
               (let [s (s/split (name import) ".")]
-                (update-in ns-opts [:import] (fnil conj []) [(symbol (s/join "." (butlast s)))
-                                                           (symbol (last s))]))
-              (update-in ns-opts [:import] (fnil conj []) import)))
-          ns-opts import))
+                (assoc imports (symbol (s/join "." (butlast s))) #{(symbol (last s))}))
+              (assoc imports (first import) (set (rest import)))))
+          {} imports))
+
+(defn mapify-ns-specs [ns-opts form env]
+  (reduce (fn [m [k & specs]]
+            (when (get m k)
+              (throw (ex-info (str "Only one " k " form is allowed per namespace definition")
+                              (merge {:form form}
+                                     (-source-info form env)))))
+            (case k
+              :refer-clojure
+              (assoc m k (into {} specs))
+              :import
+              (assoc m k (desugar-import specs))
+
+              (assoc m k (reduce (fn [m s]
+                                   (if (sequential? s)
+                                     (assoc m (first s) (into {} (rest s)))
+                                     (assoc m s {}))) {} specs)))) {} ns-opts))
 
 ;; desugars :include-macros/:refer-mcros into :require/:require-macros
 ;; and :use/:use-macros into :require/:require-macros
-(defn desugar-ns-specs [ns-opts]
-  (let [vectorize-dep (fn [opts]
-                        (update-in opts [:require]
-                                   #(reduce (fn [r s]
-                                              (if (sequential? s)
-                                                (conj r s)
-                                                (conj r [s]))) [] %)))]
-   (-> ns-opts desugar-macros desugar-use desugar-import vectorize-dep)))
+(defn desugar-ns-specs [ns-opts form env]
+  (-> ns-opts
+    (mapify-ns-specs form env)
+    desugar-macros
+    desugar-use))
 
 ;; TODO: validate
 (defn validate-ns-specs [ns-opts form env]
@@ -61,18 +73,16 @@
 
 (defn populate-env
   [{:keys [import require require-macros refer-clojure]} name {:keys [namespaces]}]
-  (let [imports (reduce (fn [m [prefix suffix]]
-                          (assoc m suffix (symbol (str prefix "." suffix)))) {} import)
-        requires (reduce (fn [m [ns & opts]]
-                           (assoc m ns (apply hash-map opts))) {} require)
+  (let [imports (reduce-kv (fn [m prefix suffixes]
+                             (merge m (into {} (mapv (fn [s] [s (symbol (str prefix "." s))]) suffixes)))) {} import)
         require-aliases (reduce (fn [m [ns {:keys [as]}]]
                                   (if as
                                     (assoc m as ns)
-                                    m)) {} requires)
+                                    m)) {} require)
         ;; TODO: assumes all required namespaces are loaded, must handle loading
         require-mappings (reduce (fn [m [ns {:keys [refer]}]]
                                    (reduce #(assoc % (get-in @namespaces [ns :mappings %])) m refer))
-                                 {} requires)
+                                 {} require)
         core-mappings (apply dissoc (get-in @namespaces ['cljs.core :mappings]) (:exclude refer-clojure))]
 
     (swap! namespaces assoc-in [name]

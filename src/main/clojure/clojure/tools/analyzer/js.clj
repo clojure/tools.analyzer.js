@@ -187,13 +187,7 @@
                              args
                              (cons {} args))
 
-        ns-opts (reduce (fn [m [k & specs]]
-                          (when (get m k)
-                            (throw (ex-info (str "Only one " k " form is allowed per namespace definition")
-                                            (merge {:form form}
-                                                   (-source-info form env)))))
-                          (assoc m k specs)) {} args)
-        ns-opts (doto (desugar-ns-specs ns-opts)
+        ns-opts (doto (desugar-ns-specs args form env)
                   (validate-ns-specs form env)
                   (populate-env name env))]
     (merge
@@ -201,7 +195,7 @@
       :env     env
       :form    form
       :name    name
-      :depends (set (map first (:require ns-opts)))}
+      :depends (set (keys (:require ns-opts)))}
      (when docstring
        {:doc docstring})
      (when metadata
