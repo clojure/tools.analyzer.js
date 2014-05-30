@@ -14,10 +14,9 @@
   (let [sugar-keys #{:include-macros :refer-macros}]
     (reduce-kv (fn [ns-opts ns opts]
                  (if (seq (select-keys opts sugar-keys))
-                   (let [{:keys [refer-macros]} opts]
-                     (-> ns-opts
-                       (update-in [:require] assoc ns (apply dissoc opts sugar-keys))
-                       (update-in [:require-macros] assoc ns (if refer-macros {:refer refer-macros} {}))))
+                   (-> ns-opts
+                     (update-in [:require] assoc ns (apply dissoc opts sugar-keys))
+                     (update-in [:require-macros] assoc ns (select-keys opts #{:refer-macros :as})))
                    ns-opts))
                ns-opts require)))
 
