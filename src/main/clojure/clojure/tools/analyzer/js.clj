@@ -14,7 +14,7 @@
              :refer [analyze analyze-in-env]
              :rename {analyze -analyze}]
             [clojure.tools.analyzer.utils :refer [resolve-var ctx -source-info]]
-            [clojure.tools.analyzer.js.utils :refer [desugar-ns-specs validate-ns-specs populate-env]]
+            [clojure.tools.analyzer.js.utils :refer [desugar-ns-specs validate-ns-specs]]
             cljs.tagged-literals)
   (:import cljs.tagged_literals.JSValue))
 
@@ -32,18 +32,25 @@
 
 (def ^:dynamic *ns* 'cljs.user)
 
+(def namespaces
+  (atom '{cljs.user {:mappings       {}
+                     :aliases        {}
+                     :macro-mappings {}
+                     :macro-aliases  {}
+                     :ns             'cljs.user}
+          cljs.core {:mappings       {}
+                     :aliases        {}
+                     :macro-mappings {}
+                     :macro-aliases  {}
+                     :ns             'cljs.core}}))
+
 (defn empty-env
   "Returns an empty env map"
   []
   {:context    :statement
    :locals     {}
    :ns         *ns*
-   :namespaces (atom '{cljs.user {:mappings {}
-                                  :aliases  {}
-                                  :ns       'cljs.user}
-                       cljs.core {:mappings {}
-                                  :aliases  {}
-                                  :ns       'cljs.core}})})
+   :namespaces namespaces})
 
 (defn desugar-host-expr [[op & expr :as form]]
   (if (symbol? op)
@@ -64,19 +71,25 @@
        :else form))
     form))
 
+(defn maybe-macro [sym {:keys [namespaces ns]}]
+  (let [var (if-let [sym-ns (namespace sym)]
+              (if-let [full-ns (get-in @namespaces [ns :macro-aliases] (symbol sym-ns))]
+                (ns-resolve full-ns (symbol (name sym)))
+                (ns-resolve (symbol sym-ns) (symbol (name sym))))
+              (get-in @namespaces [ns :mcacro-mappings sym]))]
+    (when (:macro (meta var))
+      var)))
+
 (defn macroexpand-1 [form env]
   (if (seq? form)
     (let [op (first form)]
       (if (specials op)
         form
-        ;; TODO: handle :require/:use-macros
-        (let [v (resolve-var op env)
-              clj-var (clojure.core/resolve op)]
-          (if (and clj-var
-                   (not (-> env :locals (get op)))
-                   (not v)
-                   (:macro (meta clj-var)))
-            (apply clj-var form env (rest form)) ; (m &form &env & args)
+        (let [clj-macro (maybe-macro op env)]
+          (if (and clj-macro
+                   (not (resolve-var op env))
+                   (not (-> env :locals (get op))))
+            (apply clj-macro form env (rest form)) ; (m &form &env & args)
             (desugar-host-expr form)))))
         form))
 
@@ -173,6 +186,40 @@
        {:args     exprs
         :children [:args]}))))
 
+(declare analyze-ns)
+(defn ensure-loaded [ns {:keys [namespaces] :as env}]
+  (or (@namespaces ns)
+      (analyze-ns ns env)))
+
+(defn populate-env
+  [{:keys [import require require-macros refer-clojure]} name {:keys [namespaces] :as env}]
+  (let [imports (reduce-kv (fn [m prefix suffixes]
+                             (merge m (into {} (mapv (fn [s] [s (symbol (str prefix "." s))]) suffixes)))) {} import)
+        require-aliases (reduce (fn [m [ns {:keys [as]}]]
+                                  (if as
+                                    (assoc m as ns)
+                                    m)) {} require)
+        require-mappings (reduce (fn [m [ns {:keys [refer]}]]
+                                   (ensure-loaded env ns)
+                                   (reduce #(assoc %1 %2 (get-in @namespaces [ns :mappings %2])) m refer))
+                                 {} require)
+        core-mappings (apply dissoc (get-in @namespaces ['cljs.core :mappings]) (:exclude refer-clojure))
+        macro-aliases (reduce (fn [m [ns {:keys [as]}]]
+                                (if as
+                                  (assoc m as ns)
+                                  m)) {} require-macros)
+        macro-mappings (reduce (fn [m [ns {:keys [refer]}]]
+                                 (clojure.core/require ns)
+                                 (reduce #(assoc %1 %2 (ns-resolve ns (symbol (name %2)))) m refer))
+                               {} require-macros)]
+
+    (swap! namespaces assoc-in [name]
+           {:ns             name
+            :mappings       (merge core-mappings require-mappings)
+            :aliases        (merge imports require-aliases)
+            :macro-mappings macro-mappings
+            :macro-aliases  macro-aliases})))
+
 (defmethod parse 'ns
   [[_ name & args :as form] env]
   (when-not (symbol? name))
@@ -213,3 +260,5 @@
                             #'*ns*              *ns*}
                            (:bindings opts))
                     (-analyze form env))))
+
+(defn analyze-ns [ns env])

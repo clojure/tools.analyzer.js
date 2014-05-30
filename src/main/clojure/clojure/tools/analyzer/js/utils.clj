@@ -70,22 +70,3 @@
     (throw (ex-info (str "Unsupported ns spec(s): " invalid)
                     (merge {:form form}
                            (-source-info form env))))))
-
-(defn populate-env
-  [{:keys [import require require-macros refer-clojure]} name {:keys [namespaces]}]
-  (let [imports (reduce-kv (fn [m prefix suffixes]
-                             (merge m (into {} (mapv (fn [s] [s (symbol (str prefix "." s))]) suffixes)))) {} import)
-        require-aliases (reduce (fn [m [ns {:keys [as]}]]
-                                  (if as
-                                    (assoc m as ns)
-                                    m)) {} require)
-        ;; TODO: assumes all required namespaces are loaded, must handle loading
-        require-mappings (reduce (fn [m [ns {:keys [refer]}]]
-                                   (reduce #(assoc % (get-in @namespaces [ns :mappings %])) m refer))
-                                 {} require)
-        core-mappings (apply dissoc (get-in @namespaces ['cljs.core :mappings]) (:exclude refer-clojure))]
-
-    (swap! namespaces assoc-in [name]
-           {:ns       name
-            :mappings (merge core-mappings require-mappings)
-            :aliases  (merge imports require-aliases)})))
