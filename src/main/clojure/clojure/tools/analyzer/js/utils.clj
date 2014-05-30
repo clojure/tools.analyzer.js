@@ -46,13 +46,13 @@
                                      (-source-info form env)))))
             (case k
               :refer-clojure
-              (assoc m k (into {} specs))
+              (assoc m k (apply hash-map specs))
               :import
               (assoc m k (desugar-import specs))
 
               (assoc m k (reduce (fn [m s]
                                    (if (sequential? s)
-                                     (assoc m (first s) (into {} (rest s)))
+                                     (assoc m (first s) (apply hash-map (rest s)))
                                      (assoc m s {}))) {} specs)))) {} ns-opts))
 
 ;; desugars :include-macros/:refer-mcros into :require/:require-macros

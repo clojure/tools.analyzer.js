@@ -13,7 +13,11 @@
              :as ana
              :refer [analyze analyze-in-env]
              :rename {analyze -analyze}]
-            [clojure.tools.analyzer.utils :refer [resolve-var ctx -source-info]]
+            [clojure.tools.analyzer
+             [utils :refer [resolve-var ctx -source-info]]
+             [ast :refer [prewalk]]]
+            [clojure.tools.analyzer.passes
+             [cleanup :refer [cleanup]]]
             [clojure.tools.analyzer.js.utils :refer [desugar-ns-specs validate-ns-specs]]
             cljs.tagged-literals)
   (:import cljs.tagged_literals.JSValue))
@@ -37,12 +41,12 @@
                      :aliases        {}
                      :macro-mappings {}
                      :macro-aliases  {}
-                     :ns             'cljs.user}
+                     :ns             cljs.user}
           cljs.core {:mappings       {}
                      :aliases        {}
                      :macro-mappings {}
                      :macro-aliases  {}
-                     :ns             'cljs.core}}))
+                     :ns             cljs.core}}))
 
 (defn empty-env
   "Returns an empty env map"
@@ -192,7 +196,7 @@
       (analyze-ns ns env)))
 
 (defn populate-env
-  [{:keys [import require require-macros refer-clojure]} name {:keys [namespaces] :as env}]
+  [{:keys [import require require-macros refer-clojure]} ns-name {:keys [namespaces] :as env}]
   (let [imports (reduce-kv (fn [m prefix suffixes]
                              (merge m (into {} (mapv (fn [s] [s (symbol (str prefix "." s))]) suffixes)))) {} import)
         require-aliases (reduce (fn [m [ns {:keys [as]}]]
@@ -200,7 +204,7 @@
                                     (assoc m as ns)
                                     m)) {} require)
         require-mappings (reduce (fn [m [ns {:keys [refer]}]]
-                                   (ensure-loaded env ns)
+                                   (ensure-loaded ns env)
                                    (reduce #(assoc %1 %2 (get-in @namespaces [ns :mappings %2])) m refer))
                                  {} require)
         core-mappings (apply dissoc (get-in @namespaces ['cljs.core :mappings]) (:exclude refer-clojure))
@@ -213,8 +217,8 @@
                                  (reduce #(assoc %1 %2 (ns-resolve ns (symbol (name %2)))) m refer))
                                {} require-macros)]
 
-    (swap! namespaces assoc-in [name]
-           {:ns             name
+    (swap! namespaces assoc-in [ns-name]
+           {:ns             ns-name
             :mappings       (merge core-mappings require-mappings)
             :aliases        (merge imports require-aliases)
             :macro-mappings macro-mappings
@@ -222,11 +226,11 @@
 
 (defmethod parse 'ns
   [[_ name & args :as form] env]
-  (when-not (symbol? name))
-  (throw (ex-info (str "Namespaces must be named by a symbol, had: "
-                       (.getName ^Class (class name)))
-                  (merge {:form form}
-                         (-source-info form env))))
+  (when-not (symbol? name)
+    (throw (ex-info (str "Namespaces must be named by a symbol, had: "
+                         (.getName ^Class (class name)))
+                    (merge {:form form}
+                           (-source-info form env)))))
   (let [[docstring & args] (if (string? (first args))
                              args
                              (cons nil args))
@@ -237,6 +241,7 @@
         ns-opts (doto (desugar-ns-specs args form env)
                   (validate-ns-specs form env)
                   (populate-env name env))]
+    (set! *ns* name)
     (merge
      {:op      :ns
       :env     env
@@ -248,6 +253,7 @@
      (when metadata
        {:meta metadata}))))
 
+;; assumes *ns* is bound
 (defn analyze
   ([form] (analyze form (empty-env) {}))
   ([form env] (analyze form env {}))
@@ -256,9 +262,15 @@
                             #'ana/create-var    create-var
                             #'ana/parse         parse
                             #'ana/var?          var?
-                            #'ana/analyze-form  analyze-form
-                            #'*ns*              *ns*}
+                            #'ana/analyze-form  analyze-form}
                            (:bindings opts))
                     (-analyze form env))))
+(defn analyze'
+  "Like `analyze` but runs cleanup on the AST"
+  ([form] (analyze' form (empty-env)))
+  ([form env] (analyze' form env {}))
+  ([form env opts]
+     (prewalk (analyze form env opts) cleanup)))
 
+;; needs to bind *ns*
 (defn analyze-ns [ns env])
