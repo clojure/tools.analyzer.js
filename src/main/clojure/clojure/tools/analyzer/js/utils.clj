@@ -8,7 +8,9 @@
 
 (ns clojure.tools.analyzer.js.utils
   (:require [clojure.string :as s]
-            [clojure.tools.analyzer.utils :refer [-source-info]]))
+            [clojure.tools.analyzer.utils :refer [-source-info]]
+            [clojure.java.io :as io])
+  (:import java.io.File))
 
 (defn desugar-macros [{:keys [require] :as ns-opts}]
   (let [sugar-keys #{:include-macros :refer-macros}]
@@ -69,3 +71,24 @@
     (throw (ex-info (str "Unsupported ns spec(s): " invalid)
                     (merge {:form form}
                            (-source-info form env))))))
+
+(defn source-path [x]
+  (if (instance? File x)
+    (.getAbsolutePath ^File x)
+    (str x)))
+
+(defn ns->relpath [s]
+  (str (s/replace (munge (str s)) \. \/) ".cljs"))
+
+(defn ns-resource [ns]
+  (let [f (ns->relpath ns)]
+   (cond
+    (instance? File f) f
+    (instance? java.net.URL f) f
+    (re-find #"^file://" f) (java.net.URL. f)
+    :else (io/resource f))))
+
+(defn res-path [res]
+  (if (instance? File res)
+    (.getPath ^File res)
+    (.getPath ^java.net.URL res)))

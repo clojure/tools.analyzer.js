@@ -18,9 +18,14 @@
              [ast :refer [prewalk]]]
             [clojure.tools.analyzer.passes
              [cleanup :refer [cleanup]]]
-            [clojure.tools.analyzer.js.utils :refer [desugar-ns-specs validate-ns-specs]]
-            cljs.tagged-literals)
-  (:import cljs.tagged_literals.JSValue))
+            [clojure.tools.analyzer.js.utils
+             :refer [desugar-ns-specs validate-ns-specs ns-resource source-path]]
+            [clojure.java.io :as io]
+            [cljs.tagged-literals :as tags]
+            [clojure.tools.reader :as reader]
+            [clojure.tools.reader.reader-types :as readers])
+  (:import cljs.tagged_literals.JSValue)
+  (:alias c.c clojure.core))
 
 (def specials
   "Set of the special forms for clojurescript"
@@ -253,6 +258,9 @@
      (when metadata
        {:meta metadata}))))
 
+(defn run-passes [ast]
+  (-> ast))
+
 ;; assumes *ns* is bound
 (defn analyze
   ([form] (analyze form (empty-env) {}))
@@ -264,7 +272,8 @@
                             #'ana/var?          var?
                             #'ana/analyze-form  analyze-form}
                            (:bindings opts))
-                    (-analyze form env))))
+       (run-passes (-analyze form env)))))
+
 (defn analyze'
   "Like `analyze` but runs cleanup on the AST"
   ([form] (analyze' form (empty-env)))
@@ -272,5 +281,25 @@
   ([form env opts]
      (prewalk (analyze form env opts) cleanup)))
 
-;; needs to bind *ns*
-(defn analyze-ns [ns env])
+;; TODO: handle env/*compiler*, cache analyzed code
+(defn analyze-ns [ns env]
+  (let [res (ns-resource ns)]
+    (assert res (str "Can't find " ns " in classpath"))
+    (let [filename (source-path res)]
+      (binding [*ns* *ns*]
+        (with-open [rdr (io/reader res)]
+          (let [pbr (readers/indexing-push-back-reader
+                     (java.io.PushbackReader. rdr) 1 filename)
+                eof (Object.)
+                env (empty-env)]
+            (loop []
+              (let [form (binding [c.c/*ns* (create-ns *ns*)
+                                   reader/*data-readers* tags/*cljs-data-readers*
+                                   reader/*alias-map* (apply merge {}
+                                                             (-> env :namespaces deref (get *ns*)
+                                                                (select-keys #{:aliases :macro-aliases})
+                                                                vals))]
+                           (reader/read pbr nil eof))]
+                (when-not (identical? form eof)
+                  (analyze form (assoc env :ns *ns*))
+                  (recur))))))))))
