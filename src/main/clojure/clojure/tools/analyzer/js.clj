@@ -15,11 +15,12 @@
              :rename {analyze -analyze}]
             [clojure.tools.analyzer
              [utils :refer [resolve-var ctx -source-info]]
-             [ast :refer [prewalk]]]
+             [ast :refer [prewalk]]
+             [env :as env :refer [*env*]]]
             [clojure.tools.analyzer.passes
              [cleanup :refer [cleanup]]]
             [clojure.tools.analyzer.js.utils
-             :refer [desugar-ns-specs validate-ns-specs ns-resource source-path]]
+             :refer [desugar-ns-specs validate-ns-specs ns-resource source-path res-path]]
             [clojure.java.io :as io]
             [cljs.tagged-literals :as tags]
             [clojure.tools.reader :as reader]
@@ -41,25 +42,24 @@
 
 (def ^:dynamic *ns* 'cljs.user)
 
-(def namespaces
-  (atom '{cljs.user {:mappings       {}
-                     :aliases        {}
-                     :macro-mappings {}
-                     :macro-aliases  {}
-                     :ns             cljs.user}
-          cljs.core {:mappings       {}
-                     :aliases        {}
-                     :macro-mappings {}
-                     :macro-aliases  {}
-                     :ns             cljs.core}}))
+(defn global-env []
+  (atom '{:namespaces {cljs.user {:mappings       {}
+                                  :aliases        {}
+                                  :macro-mappings {}
+                                  :macro-aliases  {}
+                                  :ns             cljs.user}
+                       cljs.core {:mappings       {}
+                                  :aliases        {}
+                                  :macro-mappings {}
+                                  :macro-aliases  {}
+                                  :ns             cljs.core}}}))
 
 (defn empty-env
   "Returns an empty env map"
   []
   {:context    :statement
    :locals     {}
-   :ns         *ns*
-   :namespaces namespaces})
+   :ns         *ns*})
 
 (defn desugar-host-expr [[op & expr :as form]]
   (if (symbol? op)
@@ -80,27 +80,29 @@
        :else form))
     form))
 
-(defn maybe-macro [sym {:keys [namespaces ns]}]
+(defn maybe-macro [sym {:keys [ns]}]
   (let [var (if-let [sym-ns (namespace sym)]
-              (if-let [full-ns (get-in @namespaces [ns :macro-aliases] (symbol sym-ns))]
+              (if-let [full-ns (get-in (env/deref-env)
+                                       [:namespaces ns :macro-aliases (symbol sym-ns)])]
                 (ns-resolve full-ns (symbol (name sym)))
                 (ns-resolve (symbol sym-ns) (symbol (name sym))))
-              (get-in @namespaces [ns :mcacro-mappings sym]))]
+              (get-in (env/deref-env) [:namespaces ns :mcacro-mappings sym]))]
     (when (:macro (meta var))
       var)))
 
 (defn macroexpand-1 [form env]
-  (if (seq? form)
-    (let [op (first form)]
-      (if (specials op)
-        form
-        (let [clj-macro (maybe-macro op env)]
-          (if (and clj-macro
-                   (not (resolve-var op env))
-                   (not (-> env :locals (get op))))
-            (apply clj-macro form env (rest form)) ; (m &form &env & args)
-            (desugar-host-expr form)))))
-        form))
+  (env/ensure (global-env)
+    (if (seq? form)
+      (let [op (first form)]
+        (if (specials op)
+          form
+          (let [clj-macro (maybe-macro op env)]
+            (if (and clj-macro
+                     (not (resolve-var op env))
+                     (not (-> env :locals (get op))))
+              (apply clj-macro form env (rest form)) ; (m &form &env & args)
+              (desugar-host-expr form)))))
+      form)))
 
 (defn create-var
   [sym {:keys [ns]}]
@@ -137,7 +139,7 @@
     (ana/-analyze-form form env)))
 
 (defn parse-type
-  [op [_ name fields pmasks :as form] {:keys [ns namespaces] :as env}]
+  [op [_ name fields pmasks :as form] {:keys [ns] :as env}]
   (let [fields-expr (mapv (fn [name]
                             {:env     env
                              :form    name
@@ -148,7 +150,7 @@
                           fields)
         protocols (-> name meta :protocols)]
 
-    (swap! namespaces assoc-in [ns :mappings name]
+    (swap! *env* assoc-in [:namespaces ns :mappings name]
            {:op        :type
             :name      name
             :ns        ns
@@ -196,12 +198,12 @@
         :children [:args]}))))
 
 (declare analyze-ns)
-(defn ensure-loaded [ns {:keys [namespaces] :as env}]
-  (or (@namespaces ns)
+(defn ensure-loaded [ns env]
+  (or (-> (env/deref-env) :namespaces ns)
       (analyze-ns ns env)))
 
 (defn populate-env
-  [{:keys [import require require-macros refer-clojure]} ns-name {:keys [namespaces] :as env}]
+  [{:keys [import require require-macros refer-clojure]} ns-name env]
   (let [imports (reduce-kv (fn [m prefix suffixes]
                              (merge m (into {} (mapv (fn [s] [s (symbol (str prefix "." s))]) suffixes)))) {} import)
         require-aliases (reduce (fn [m [ns {:keys [as]}]]
@@ -210,9 +212,10 @@
                                     m)) {} require)
         require-mappings (reduce (fn [m [ns {:keys [refer]}]]
                                    (ensure-loaded ns env)
-                                   (reduce #(assoc %1 %2 (get-in @namespaces [ns :mappings %2])) m refer))
+                                   (reduce #(assoc %1 %2 (get-in (env/deref-env)
+                                                                 [:namespaces ns :mappings %2])) m refer))
                                  {} require)
-        core-mappings (apply dissoc (get-in @namespaces ['cljs.core :mappings]) (:exclude refer-clojure))
+        core-mappings (apply dissoc (get-in (env/deref-env) [:namespaces 'cljs.core :mappings]) (:exclude refer-clojure))
         macro-aliases (reduce (fn [m [ns {:keys [as]}]]
                                 (if as
                                   (assoc m as ns)
@@ -222,7 +225,7 @@
                                  (reduce #(assoc %1 %2 (ns-resolve ns (symbol (name %2)))) m refer))
                                {} require-macros)]
 
-    (swap! namespaces assoc-in [ns-name]
+    (swap! *env* assoc-in [:namespaces ns-name]
            {:ns             ns-name
             :mappings       (merge core-mappings require-mappings)
             :aliases        (merge imports require-aliases)
@@ -272,7 +275,8 @@
                             #'ana/var?          var?
                             #'ana/analyze-form  analyze-form}
                            (:bindings opts))
-       (run-passes (-analyze form env)))))
+       (env/ensure (global-env)
+         (run-passes (-analyze form env))))))
 
 (defn analyze'
   "Like `analyze` but runs cleanup on the AST"
@@ -281,25 +285,29 @@
   ([form env opts]
      (prewalk (analyze form env opts) cleanup)))
 
-;; TODO: handle env/*compiler*, cache analyzed code
 (defn analyze-ns [ns env]
-  (let [res (ns-resource ns)]
-    (assert res (str "Can't find " ns " in classpath"))
-    (let [filename (source-path res)]
-      (binding [*ns* *ns*]
-        (with-open [rdr (io/reader res)]
-          (let [pbr (readers/indexing-push-back-reader
-                     (java.io.PushbackReader. rdr) 1 filename)
-                eof (Object.)
-                env (empty-env)]
-            (loop []
-              (let [form (binding [c.c/*ns* (create-ns *ns*)
-                                   reader/*data-readers* tags/*cljs-data-readers*
-                                   reader/*alias-map* (apply merge {}
-                                                             (-> env :namespaces deref (get *ns*)
-                                                                (select-keys #{:aliases :macro-aliases})
-                                                                vals))]
-                           (reader/read pbr nil eof))]
-                (when-not (identical? form eof)
-                  (analyze form (assoc env :ns *ns*))
-                  (recur))))))))))
+  (env/ensure (global-env)
+    (let [res (ns-resource ns)]
+      (assert res (str "Can't find " ns " in classpath"))
+      (let [filename (source-path res)
+            path (res-path res)]
+        (when-not (get-in *env* [::analyzed-cljs path])
+          (binding [*ns* *ns*]
+            (with-open [rdr (io/reader res)]
+              (let [pbr (readers/indexing-push-back-reader
+                         (java.io.PushbackReader. rdr) 1 filename)
+                    eof (Object.)
+                    env (empty-env)]
+                (loop []
+                  (let [form (binding [c.c/*ns* (create-ns *ns*)
+                                       reader/*data-readers* tags/*cljs-data-readers*
+                                       reader/*alias-map* (apply merge {}
+                                                                 (-> (env/deref-env) :namespaces (get *ns*)
+                                                                    (select-keys #{:aliases :macro-aliases})
+                                                                    vals))]
+                               (reader/read pbr nil eof))]
+                    (when-not (identical? form eof)
+                      (swap! *env* update-in [::analyzed-cljs path]
+                             (fnil conj [])
+                             (analyze form (assoc env :ns *ns*)))
+                      (recur))))))))))))
