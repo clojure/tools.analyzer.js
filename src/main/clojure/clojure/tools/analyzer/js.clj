@@ -310,4 +310,5 @@
                       (swap! *env* update-in [::analyzed-cljs path]
                              (fnil conj [])
                              (analyze form (assoc env :ns *ns*)))
-                      (recur))))))))))))
+                      (recur))))))))
+        (get-in @*env* [::analyzed-cljs path])))))
