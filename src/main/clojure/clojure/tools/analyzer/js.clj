@@ -18,7 +18,12 @@
              [ast :refer [prewalk]]
              [env :as env :refer [*env*]]]
             [clojure.tools.analyzer.passes
-             [cleanup :refer [cleanup]]]
+             [source-info :refer [source-info]]
+             [cleanup :refer [cleanup]]
+             [elide-meta :refer [elide-meta elides]]
+             [warn-earmuff :refer [warn-earmuff]]
+             [add-binding-atom :refer [add-binding-atom]]
+             [uniquify :refer [uniquify-locals]]]
             [clojure.tools.analyzer.js.utils
              :refer [desugar-ns-specs validate-ns-specs ns-resource source-path res-path]]
             [clojure.java.io :as io]
@@ -61,6 +66,7 @@
    :locals     {}
    :ns         *ns*})
 
+;; TODO handle js-ns/foo
 (defn desugar-host-expr [[op & expr :as form]]
   (if (symbol? op)
     (let [opname (name op)]
@@ -262,7 +268,17 @@
        {:meta metadata}))))
 
 (defn run-passes [ast]
-  (-> ast))
+  (binding [elides (into #{:line :column :end-line :end-column :file :source} elides)]
+    (-> ast
+
+      uniquify-locals
+      add-binding-atom
+
+      (prewalk (fn [ast]
+                 (-> ast
+                   warn-earmuff
+                   source-info
+                   elide-meta))))))
 
 (defn analyze
   ([form] (analyze form (empty-env) {}))
