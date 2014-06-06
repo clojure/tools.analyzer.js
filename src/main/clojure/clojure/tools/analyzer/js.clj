@@ -264,7 +264,6 @@
 (defn run-passes [ast]
   (-> ast))
 
-;; assumes *ns* is bound
 (defn analyze
   ([form] (analyze form (empty-env) {}))
   ([form env] (analyze form env {}))
@@ -274,6 +273,8 @@
                             #'ana/parse         parse
                             #'ana/var?          var?
                             #'ana/analyze-form  analyze-form}
+                           (when-not (thread-bound? #'*ns*)
+                             {#'*ns* *ns*})
                            (:bindings opts))
        (env/ensure (global-env)
          (run-passes (-analyze form env))))))
