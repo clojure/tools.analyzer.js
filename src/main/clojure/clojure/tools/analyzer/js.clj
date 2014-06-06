@@ -86,7 +86,7 @@
                                        [:namespaces ns :macro-aliases (symbol sym-ns)])]
                 (ns-resolve full-ns (symbol (name sym)))
                 (ns-resolve (symbol sym-ns) (symbol (name sym))))
-              (get-in (env/deref-env) [:namespaces ns :mcacro-mappings sym]))]
+              (get-in (env/deref-env) [:namespaces ns :macro-mappings sym]))]
     (when (:macro (meta var))
       var)))
 
@@ -200,7 +200,7 @@
 (declare analyze-ns)
 (defn ensure-loaded [ns env]
   (or (-> (env/deref-env) :namespaces ns)
-      (analyze-ns ns env)))
+      (analyze-ns ns)))
 
 (defn populate-env
   [{:keys [import require require-macros refer-clojure]} ns-name env]
@@ -286,7 +286,7 @@
   ([form env opts]
      (prewalk (analyze form env opts) cleanup)))
 
-(defn analyze-ns [ns env]
+(defn analyze-ns [ns]
   (env/ensure (global-env)
     (let [res (ns-resource ns)]
       (assert res (str "Can't find " ns " in classpath"))
