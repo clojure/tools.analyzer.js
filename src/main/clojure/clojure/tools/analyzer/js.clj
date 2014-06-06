@@ -267,7 +267,7 @@
      (when metadata
        {:meta metadata}))))
 
-(defn run-passes [ast]
+(defn ^:dynamic run-passes [ast]
   (binding [elides (into #{:line :column :end-line :end-column :file :source} elides)]
     (-> ast
 
