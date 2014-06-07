@@ -15,7 +15,7 @@
              :rename {analyze -analyze}]
             [clojure.tools.analyzer
              [utils :refer [resolve-var ctx -source-info]]
-             [ast :refer [prewalk]]
+             [ast :refer [prewalk postwalk]]
              [env :as env :refer [*env*]]]
             [clojure.tools.analyzer.passes
              [source-info :refer [source-info]]
@@ -23,7 +23,10 @@
              [elide-meta :refer [elide-meta elides]]
              [warn-earmuff :refer [warn-earmuff]]
              [add-binding-atom :refer [add-binding-atom]]
-             [uniquify :refer [uniquify-locals]]]
+             [uniquify :refer [uniquify-locals]]
+             [constant-lifter :refer [constant-lift]]]
+            [clojure.tools.analyzer.passes.js
+             [annotate-tag :refer [annotate-tag]]]
             [clojure.tools.analyzer.js.utils
              :refer [desugar-ns-specs validate-ns-specs ns-resource source-path res-path]]
             [clojure.java.io :as io]
@@ -278,7 +281,12 @@
                  (-> ast
                    warn-earmuff
                    source-info
-                   elide-meta))))))
+                   elide-meta)))
+
+      (postwalk (fn [ast]
+                  (-> ast
+                    annotate-tag
+                    constant-lift))))))
 
 (defn analyze
   ([form] (analyze form (empty-env) {}))
