@@ -89,13 +89,19 @@
        :else form))
     form))
 
+(defn fix-ns [ns]
+  (if (= ns "clojure.core")
+    "cljs.core"
+    ns))
+
 (defn maybe-macro [sym {:keys [ns]}]
-  (let [var (if-let [sym-ns (namespace sym)]
+  (let [var (if-let [sym-ns (fix-ns (namespace sym))]
               (if-let [full-ns (get-in (env/deref-env)
                                        [:namespaces ns :macro-aliases (symbol sym-ns)])]
                 (ns-resolve full-ns (symbol (name sym)))
                 (ns-resolve (symbol sym-ns) (symbol (name sym))))
-              (get-in (env/deref-env) [:namespaces ns :macro-mappings sym]))]
+              (or (get-in (env/deref-env) [:namespaces ns :macro-mappings sym])
+                  (ns-resolve 'cljs.core sym)))]
     (when (:macro (meta var))
       var)))
 
