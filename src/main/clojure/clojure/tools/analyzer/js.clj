@@ -115,7 +115,19 @@
             (if (and clj-macro
                      (not (resolve-var op env))
                      (not (-> env :locals (get op))))
-              (apply clj-macro form env (rest form)) ; (m &form &env & args)
+              (with-bindings (merge {#'c.c/*ns* (create-ns *ns*)}
+                                    (when-not (thread-bound? #'*ns*)
+                                      {#'*ns* *ns*}))
+                (let [ret (apply clj-macro form env (rest form))] ; (m &form &env & args)
+                  (if (and (seq? ret)
+                           (= 'js* (first ret)))
+                    (vary-meta ret merge
+                               {:js-op (if (namespace op)
+                                         op
+                                         (symbol "cljs.core" (name op)))}
+                               (when (-> clj-macro meta ::numeric)
+                                 {:numeric true}))
+                    ret)))
               (desugar-host-expr form)))))
       form)))
 

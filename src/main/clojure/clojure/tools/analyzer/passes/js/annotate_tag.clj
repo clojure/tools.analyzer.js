@@ -34,6 +34,12 @@
   [ast]
   (assoc ast :tag 'object))
 
+(defmethod -annotate-tag :js
+  [{:keys [form] :as ast}]
+  (if (-> form meta :numeric)
+    (assoc ast :tag 'number)
+    ast))
+
 (defmethod -annotate-tag :fn
   [ast]
   (assoc ast :tag 'function))
@@ -79,7 +85,6 @@
 
 (defmethod -annotate-tag :default [ast] ast)
 
-;; TODO: handle :numeric
 (defn annotate-tag
   [ast]
   (if-let [tag (or (-> ast :val meta :tag)
