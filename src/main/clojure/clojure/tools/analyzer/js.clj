@@ -90,11 +90,11 @@
                                        [:namespaces ns :macro-aliases (symbol sym-ns)])]
                 (ns-resolve full-ns (name sym))
                 (ns-resolve sym-ns (name sym)))
-              (or (get-in (env/deref-env) [:namespaces ns :macro-mappings sym])
-                  (ns-resolve 'cljs.core sym)))]
+              (get-in (env/deref-env) [:namespaces ns :macro-mappings sym]))]
     (when (:macro (meta var))
       var)))
 
+;; should js/foo and (js/foo) be handled in a separate op?
 (defn desugar-host-expr [form env]
   (cond
    (symbol? form)
@@ -260,6 +260,13 @@
   (or (-> (env/deref-env) :namespaces ns)
       (analyze-ns ns)))
 
+(defn core-macros []
+  (reduce-kv (fn [m k v]
+               (if (:macro (meta v))
+                 (assoc m k v)
+                 m))
+             {} (ns-interns 'cljs.core)))
+
 (defn populate-env
   [{:keys [import require require-macros refer-clojure]} ns-name env]
   (let [imports (reduce-kv (fn [m prefix suffixes]
@@ -278,6 +285,7 @@
                                 (if as
                                   (assoc m as ns)
                                   m)) {} require-macros)
+        core-macro-mappings (apply dissoc (core-macros) (:exclude refer-clojure))
         macro-mappings (reduce (fn [m [ns {:keys [refer]}]]
                                  (clojure.core/require ns)
                                  (reduce #(assoc %1 %2 (ns-resolve ns (name %2))) m refer))
@@ -287,7 +295,7 @@
            {:ns             ns-name
             :mappings       (merge core-mappings require-mappings)
             :aliases        (merge imports require-aliases)
-            :macro-mappings macro-mappings
+            :macro-mappings (merge core-macro-mappings macro-mappings)
             :macro-aliases  macro-aliases})))
 
 (defmethod parse 'ns
