@@ -46,7 +46,10 @@
 
 (defmethod -annotate-tag :const
   [ast]
-  ((get-method -annotate-tag (:type ast)) ast))
+  (let [ast ((get-method -annotate-tag (:type ast)) ast)]
+    (if (:tag ast)
+      ast
+      (assoc ast :tag 'any))))
 
 (defmethod -annotate-tag :nil
   [ast]
