@@ -26,7 +26,8 @@
              [uniquify :refer [uniquify-locals]]
              [constant-lifter :refer [constant-lift]]]
             [clojure.tools.analyzer.passes.js
-             [annotate-tag :refer [annotate-tag]]]
+             [annotate-tag :refer [annotate-tag]]
+             [infer-tag :refer [infer-tag]]]
             [clojure.tools.analyzer.js.utils
              :refer [desugar-ns-specs validate-ns-specs ns-resource source-path res-path]]
             [clojure.java.io :as io]
@@ -50,6 +51,7 @@
 
 (def ^:dynamic *ns* 'cljs.user)
 
+;; TODO: seed cljs.core/cljs.user
 (defn global-env []
   (atom '{:namespaces {cljs.user {:mappings       {}
                                   :aliases        {}
@@ -298,6 +300,7 @@
             :macro-mappings (merge core-macro-mappings macro-mappings)
             :macro-aliases  macro-aliases})))
 
+;;TODO: check for circular deps, handle js deps
 (defmethod parse 'ns
   [[_ name & args :as form] env]
   (when-not (symbol? name)
@@ -343,6 +346,7 @@
       (postwalk (fn [ast]
                   (-> ast
                     annotate-tag
+                    infer-tag
                     constant-lift))))))
 
 (defn analyze
