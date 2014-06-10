@@ -87,7 +87,7 @@
 
 (defn annotate-tag
   [ast]
-  (if-let [tag (or (-> ast :val meta :tag)
-                   (-> ast :form meta :tag))]
+  (if-let [tag (or (-> ast :form meta :tag)
+                   (-> ast :val meta :tag))]
     (assoc ast :tag tag)
     (-annotate-tag ast)))
