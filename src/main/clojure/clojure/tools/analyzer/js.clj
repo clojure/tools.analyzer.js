@@ -166,9 +166,10 @@
 
 (defn create-var
   [sym {:keys [ns]}]
-  {:op   :var
-   :name sym
-   :ns   ns})
+  (with-meta {:op   :var
+              :name sym
+              :ns   ns}
+    (meta sym)))
 
 (defn var? [x]
   (= :var (:op x)))
