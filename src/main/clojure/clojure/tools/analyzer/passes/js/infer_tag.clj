@@ -6,7 +6,9 @@
 ;;   the terms of this license.
 ;;   You must not remove this notice, or any other, from this software.
 
-(ns clojure.tools.analyzer.passes.js.infer-tag)
+(ns clojure.tools.analyzer.passes.js.infer-tag
+  (:require [clojure.tools.analyzer.env :as env]
+            [clojure.tools.analyzer.utils :refer [arglist-for-arity]]))
 
 (defmulti -infer-tag :op)
 (defmethod -infer-tag :default [ast] ast)
@@ -38,6 +40,53 @@
 (defmethod -infer-tag :loop
   [{:keys [body] :as ast}]
   (merge ast (select-keys body [:return-tag :arglists :ignore-tag :tag])))
+
+(defmethod -infer-tag :binding
+  [{:keys [init atom] :as ast}]
+  (let [ast (if init
+              (merge (select-keys init [:return-tag :arglists :ignore-tag :tag]) ast)
+              ast)]
+    (swap! atom merge (select-keys ast [:return-tag :arglists :ignore-tag :tag]))
+    ast))
+
+(defmethod -infer-tag :local
+  [{:keys [atom] :as ast}]
+  (merge ast @atom))
+
+(defmethod -infer-tag :def
+  [{:keys [init var] :as ast}]
+  (let [info (select-keys init [:return-tag :arglists :ignore-tag :tag])]
+    (swap! env/*env* update-in [:namespaces (:ns var) :mappings (:name var)] merge info)
+    (merge ast info)))
+
+(defmethod -infer-tag :var
+  [{:keys [var] :as ast}]
+  (let [info (-> (env/deref-env)
+               (get-in [:namespaces (:ns var) :mappings (:name var)])
+               (select-keys [:return-tag :arglists :ignore-tag :tag]))]
+    (merge ast info)))
+
+(defmethod -infer-tag :set!
+  [{:keys [target] :as ast}]
+  (if-let [tag (:tag target)]
+    (assoc ast :tag tag)
+    ast))
+
+(defmethod -infer-tag :invoke
+  [{:keys [fn args] :as ast}]
+  (if (:arglists fn)
+    (let [argc (count args)
+          arglist (arglist-for-arity fn argc)
+          tag (or (:tag (meta arglist))
+                  (:return-tag fn)
+                  (and (= :var (:op fn))
+                       (:tag (meta (:var fn)))))]
+      (merge ast
+             (when tag
+               {:tag     tag})))
+    (if-let [tag (:return-tag fn)]
+      (assoc ast :tag tag)
+      ast)))
 
 (defn =-arglists? [a1 a2]
   (let [tag (fn [x] (-> x meta :tag))]
@@ -83,7 +132,7 @@
      ast)))
 
 (defn infer-tag
-  [{:keys [tag] :as tag}]
+  [{:keys [tag] :as ast}]
   (merge (-infer-tag ast)
          (when tag
            {:tag tag})))
