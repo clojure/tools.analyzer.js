@@ -131,6 +131,34 @@
      :else
      ast)))
 
+;;TODO: handle catches
+(defmethod -infer-tag :try
+  [{:keys [body catches] :as ast}]
+  (let [{:keys []} body]
+    (merge ast (select-keys [tag return-tag arglists ignore-tag] body))s))
+
+;;TODO: handle :ignore-tag ?
+(defmethod -infer-tag :fn-method
+  [{:keys [form body params local] :as ast}]
+  (let [annotated-tag (or (:tag (meta (first form)))
+                          (:tag (meta (:form local))))
+        body-tag (:tag body)
+        tag (or annotated-tag body-tag)]
+    (merge ast
+           (when tag
+             {:tag   tag})
+           {:arglist (with-meta (vec (mapcat (fn [{:keys [form variadic?]}]
+                                               (if variadic? ['& form] [form]))
+                                             params))
+                       (when tag {:tag tag}))})))
+
+(defmethod -infer-tag :fn
+  [{:keys [local methods] :as ast}]
+  (merge ast
+         {:arglists (seq (mapv :arglist methods))}
+         (when-let [tag (:tag (meta (:form local)))]
+           {:return-tag tag})))
+
 (defn infer-tag
   [{:keys [tag] :as ast}]
   (merge (-infer-tag ast)
