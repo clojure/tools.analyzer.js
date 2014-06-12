@@ -27,7 +27,8 @@
              [constant-lifter :refer [constant-lift]]]
             [clojure.tools.analyzer.passes.js
              [annotate-tag :refer [annotate-tag]]
-             [infer-tag :refer [infer-tag]]]
+             [infer-tag :refer [infer-tag]]
+             [analyze-host-expr :refer [analyze-host-expr]]]
             [clojure.tools.analyzer.js.utils
              :refer [desugar-ns-specs validate-ns-specs ns-resource source-path res-path]]
             [clojure.java.io :as io]
@@ -347,6 +348,7 @@
       (postwalk (fn [ast]
                   (-> ast
                     annotate-tag
+                    analyze-host-expr
                     infer-tag
                     constant-lift))))))
 
