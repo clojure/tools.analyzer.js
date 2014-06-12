@@ -35,7 +35,7 @@
 (defn desugar-import [imports]
   (reduce (fn [imports import]
             (if (symbol? import)
-              (let [s (s/split (name import) ".")]
+              (let [s (s/split (name import) #"\.")]
                 (assoc imports (symbol (s/join "." (butlast s))) #{(symbol (last s))}))
               (assoc imports (first import) (set (rest import)))))
           {} imports))
