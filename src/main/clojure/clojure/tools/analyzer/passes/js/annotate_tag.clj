@@ -75,17 +75,6 @@
   [ast]
   (assoc ast :tag 'cljs.core/Keyword))
 
-(defmethod -annotate-tag :new
-  [{:keys [class] :as ast}]
-  (assoc ast :tag (case class
-                    js/Object   'object
-                    js/String   'string
-                    js/Array    'array
-                    js/Number   'number
-                    js/Function 'function
-                    js/Boolean  'boolean
-                    class)))
-
 (defmethod -annotate-tag :default [ast] ast)
 
 (defn annotate-tag

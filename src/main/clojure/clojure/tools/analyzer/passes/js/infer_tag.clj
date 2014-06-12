@@ -159,6 +159,17 @@
          (when-let [tag (:tag (meta (:form local)))]
            {:return-tag tag})))
 
+(defmethod -infer-tag :new
+  [{:keys [class] :as ast}]
+  (assoc ast :tag (case class
+                    js/Object   'object
+                    js/String   'string
+                    js/Array    'array
+                    js/Number   'number
+                    js/Function 'function
+                    js/Boolean  'boolean
+                    class)))
+
 (defn infer-tag
   [{:keys [tag] :as ast}]
   (merge (-infer-tag ast)
