@@ -297,8 +297,8 @@
 
     (swap! *env* assoc-in [:namespaces ns-name]
            {:ns             ns-name
-            :mappings       (merge core-mappings require-mappings)
-            :aliases        (merge imports require-aliases)
+            :mappings       (merge core-mappings require-mappings imports)
+            :aliases        require-aliases
             :macro-mappings (merge core-macro-mappings macro-mappings)
             :macro-aliases  macro-aliases})))
 
