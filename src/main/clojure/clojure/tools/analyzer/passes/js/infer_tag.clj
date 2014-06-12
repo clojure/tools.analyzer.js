@@ -135,7 +135,7 @@
 (defmethod -infer-tag :try
   [{:keys [body catches] :as ast}]
   (let [{:keys []} body]
-    (merge ast (select-keys [tag return-tag arglists ignore-tag] body))s))
+    (merge ast (select-keys [:tag :return-tag :arglists :ignore-tag] body))))
 
 ;;TODO: handle :ignore-tag ?
 (defmethod -infer-tag :fn-method
