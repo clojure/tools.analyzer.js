@@ -111,7 +111,8 @@
    (let [[op & expr] form]
      (if (symbol? op)
        (let [opname (name op)
-             opns   (namespace op)]
+             opns   (namespace op)
+             op-s   (str op)]
          (cond
 
           (= (first opname) \.)
@@ -131,7 +132,7 @@
 
 
           (= (last opname) \.)
-          (with-meta (list* 'new (symbol (subs opname 0 (dec (count opname)))) expr)
+          (with-meta (list* 'new (symbol (subs op-s 0 (dec (count op-s)))) expr)
             (meta form))
 
           :else form))
