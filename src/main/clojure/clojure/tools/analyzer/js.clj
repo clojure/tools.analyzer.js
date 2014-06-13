@@ -42,7 +42,7 @@
 
 (def specials
   "Set of the special forms for clojurescript"
-  (into ana/specials '#{ns deftype* defrecord* js*}))
+  (into ana/specials '#{ns deftype* defrecord* js* case*}))
 
 (defmulti parse
   "Extension to tools.analyzer/-parse for CLJS special forms"
@@ -257,6 +257,37 @@
      (when args
        {:args     exprs
         :children [:args]}))))
+
+(defmethod parse 'case*
+  [[_ test tests thens default :as form] env]
+  (assert (symbol? test) "case* must switch on symbol")
+  (assert (every? vector? tests) "case* tests must be grouped in vectors")
+  (let [expr-env (ctx env :expr)
+        test-expr (-analyze test expr-env)
+        nodes (mapv (fn [tests then]
+                      {:op       :case-node
+                       :tests    (mapv (fn [test]
+                                         {:op       :case-test
+                                          :test     (-analyze test expr-env)
+                                          :children [:test]})
+                                       tests)
+                       :then     {:op   :case-then
+                                  :then (-analyze then env)
+                                  :children [:then]}
+                       :children [:tests :then]})
+                    tests thens)
+        default-expr (-analyze default env)]
+    (assert (every? (fn [t] (and (= :const (-> t :test :op))
+                           ((some-fn number? string?) (:form t))))
+               (mapcat :tests nodes))
+            "case* tests must be numbers or strings")
+    {:op       :case
+     :form     form
+     :env      env
+     :test     (assoc test-expr :case-test true)
+     :nodes    nodes
+     :default  default-expr
+     :children [:test :nodes :default]}))
 
 (declare analyze-ns)
 (defn ensure-loaded [ns env]
