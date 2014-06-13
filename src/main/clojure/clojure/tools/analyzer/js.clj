@@ -31,8 +31,10 @@
              [analyze-host-expr :refer [analyze-host-expr]]]
             [clojure.tools.analyzer.js.utils
              :refer [desugar-ns-specs validate-ns-specs ns-resource source-path res-path]]
+            [cljs
+             [tagged-literals :as tags]
+             [js-deps :as deps]]
             [clojure.java.io :as io]
-            [cljs.tagged-literals :as tags]
             [clojure.tools.reader :as reader]
             [clojure.tools.reader.reader-types :as readers])
   (:import cljs.tagged_literals.JSValue)
@@ -54,16 +56,12 @@
 
 ;; TODO: seed cljs.core/cljs.user
 (defn global-env []
-  (atom '{:namespaces {cljs.user {:mappings       {}
-                                  :aliases        {}
-                                  :macro-mappings {}
-                                  :macro-aliases  {}
-                                  :ns             cljs.user}
-                       cljs.core {:mappings       {}
-                                  :aliases        {}
-                                  :macro-mappings {}
-                                  :macro-aliases  {}
-                                  :ns             cljs.core}}}))
+  (atom {:namespaces          '{cljs.core {:mappings       {}
+                                           :aliases        {}
+                                           :macro-mappings {}
+                                           :macro-aliases  {}
+                                           :ns             cljs.core}}
+         :js-dependency-index (deps/js-dependency-index {})}))
 
 (defn empty-env
   "Returns an empty env map"
@@ -263,6 +261,7 @@
 (declare analyze-ns)
 (defn ensure-loaded [ns env]
   (or (-> (env/deref-env) :namespaces ns)
+      (-> (env/deref-env) :js-dependency-index (get (name ns)))
       (analyze-ns ns)))
 
 (defn core-macros []
@@ -282,6 +281,7 @@
                                     m)) {} require)
         require-mappings (reduce (fn [m [ns {:keys [refer]}]]
                                    (ensure-loaded ns env)
+                                   ;; TODO: handle (:require [goog.lib :refer [things]]) ?
                                    (reduce #(assoc %1 %2 (get-in (env/deref-env)
                                                                  [:namespaces ns :mappings %2])) m refer))
                                  {} require)
