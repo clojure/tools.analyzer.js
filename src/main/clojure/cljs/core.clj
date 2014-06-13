@@ -35,10 +35,10 @@
   (:require clojure.walk
             clojure.set
             cljs.compiler
-            [cljs.env :as env]))
+            [clojure.tools.analyzer.env :as env]
+            [clojure.tools.analyzer.utils :as utils]))
 
 (alias 'core 'clojure.core)
-(alias 'ana 'cljs.analyzer)
 
 (defmacro import-macros [ns [& vars]]
   (core/let [ns (find-ns ns)
@@ -232,8 +232,8 @@
 
 (defn simple-test-expr? [env ast]
   (core/and
-    (#{:var :invoke :constant :dot :js} (:op ast))
-    ('#{boolean seq} (cljs.analyzer/infer-tag env ast))))
+   (#{:var :invoke :const :dot :js} (:op ast))
+   ('#{boolean seq} (:tag ast))))
 
 (defmacro and
   "Evaluates exprs one at a time, from left to right. If a form
@@ -245,7 +245,7 @@
   ([x & next]
     (let [forms (concat [x] next)]
       (if (every? #(simple-test-expr? &env %)
-            (map #(cljs.analyzer/analyze &env %) forms))
+            (map #(clojure.tools.analyzer.js/analyze % &env) forms))
         (let [and-str (->> (repeat (count forms) "(~{})")
                         (interpose " && ")
                         (apply core/str))]
@@ -263,7 +263,7 @@
   ([x & next]
     (let [forms (concat [x] next)]
       (if (every? #(simple-test-expr? &env %)
-            (map #(cljs.analyzer/analyze &env %) forms))
+            (map #(clojure.tools.analyzer.js/analyze % &env) forms))
         (let [or-str (->> (repeat (count forms) "(~{})")
                         (interpose " || ")
                         (apply core/str))]
@@ -310,7 +310,7 @@
   (bool-expr (core/list 'js* "~{} === false" x)))
 
 (defmacro array? [x]
-  (if (= :nodejs (:target @env/*compiler*))
+  (if (= :nodejs (:target (env/deref-env)))
     (bool-expr `(.isArray js/Array ~x))
     (bool-expr (core/list 'js* "~{} instanceof Array" x))))
 
@@ -362,7 +362,7 @@
           astr (apply core/str (repeat n "[~{}]"))]
       `(~'js* ~(core/str "(~{}[~{}][~{}]" astr " = ~{})") ~a ~idx ~idx2 ~@idxv))))
 
-(defmacro ^::ana/numeric +
+(defmacro ^::numeric +
   ([] 0)
   ([x] x)
   ([x y] (core/list 'js* "(~{} + ~{})" x y))
@@ -379,173 +379,173 @@
 (defmacro unchecked-float [x] x)
 (defmacro unchecked-double [x] x)
 
-(defmacro ^::ana/numeric unchecked-add
+(defmacro ^::numeric unchecked-add
   ([& xs] `(+ ~@xs)))
 
-(defmacro ^::ana/numeric unchecked-add-int
+(defmacro ^::numeric unchecked-add-int
   ([& xs] `(+ ~@xs)))
 
-(defmacro ^::ana/numeric unchecked-dec
+(defmacro ^::numeric unchecked-dec
   ([x] `(dec ~x)))
 
-(defmacro ^::ana/numeric unchecked-dec-int
+(defmacro ^::numeric unchecked-dec-int
   ([x] `(dec ~x)))
 
-(defmacro ^::ana/numeric unchecked-divide-int
+(defmacro ^::numeric unchecked-divide-int
   ([& xs] `(/ ~@xs)))
 
-(defmacro ^::ana/numeric unchecked-inc
+(defmacro ^::numeric unchecked-inc
   ([x] `(inc ~x)))
 
-(defmacro ^::ana/numeric unchecked-inc-int
+(defmacro ^::numeric unchecked-inc-int
   ([x] `(inc ~x)))
 
-(defmacro ^::ana/numeric unchecked-multiply
+(defmacro ^::numeric unchecked-multiply
   ([& xs] `(* ~@xs)))
 
-(defmacro ^::ana/numeric unchecked-multiply-int
+(defmacro ^::numeric unchecked-multiply-int
   ([& xs] `(* ~@xs)))
 
-(defmacro ^::ana/numeric unchecked-negate
+(defmacro ^::numeric unchecked-negate
   ([x] `(- ~x)))
 
-(defmacro ^::ana/numeric unchecked-negate-int
+(defmacro ^::numeric unchecked-negate-int
   ([x] `(- ~x)))
 
-(defmacro ^::ana/numeric unchecked-remainder-int
+(defmacro ^::numeric unchecked-remainder-int
   ([x n] `(mod ~x ~n)))
 
-(defmacro ^::ana/numeric unchecked-subtract
+(defmacro ^::numeric unchecked-subtract
   ([& xs] `(- ~@xs)))
 
-(defmacro ^::ana/numeric unchecked-subtract-int
+(defmacro ^::numeric unchecked-subtract-int
   ([& xs] `(- ~@xs)))
 
-(defmacro ^::ana/numeric -
+(defmacro ^::numeric -
   ([x] (core/list 'js* "(- ~{})" x))
   ([x y] (core/list 'js* "(~{} - ~{})" x y))
   ([x y & more] `(- (- ~x ~y) ~@more)))
 
-(defmacro ^::ana/numeric *
+(defmacro ^::numeric *
   ([] 1)
   ([x] x)
   ([x y] (core/list 'js* "(~{} * ~{})" x y))
   ([x y & more] `(* (* ~x ~y) ~@more)))
 
-(defmacro ^::ana/numeric /
+(defmacro ^::numeric /
   ([x] `(/ 1 ~x))
   ([x y] (core/list 'js* "(~{} / ~{})" x y))
   ([x y & more] `(/ (/ ~x ~y) ~@more)))
 
-(defmacro ^::ana/numeric divide
+(defmacro ^::numeric divide
   ([x] `(/ 1 ~x))
   ([x y] (core/list 'js* "(~{} / ~{})" x y))
   ([x y & more] `(/ (/ ~x ~y) ~@more)))
 
-(defmacro ^::ana/numeric <
+(defmacro ^::numeric <
   ([x] true)
   ([x y] (bool-expr (core/list 'js* "(~{} < ~{})" x y)))
   ([x y & more] `(and (< ~x ~y) (< ~y ~@more))))
 
-(defmacro ^::ana/numeric <=
+(defmacro ^::numeric <=
   ([x] true)
   ([x y] (bool-expr (core/list 'js* "(~{} <= ~{})" x y)))
   ([x y & more] `(and (<= ~x ~y) (<= ~y ~@more))))
 
-(defmacro ^::ana/numeric >
+(defmacro ^::numeric >
   ([x] true)
   ([x y] (bool-expr (core/list 'js* "(~{} > ~{})" x y)))
   ([x y & more] `(and (> ~x ~y) (> ~y ~@more))))
 
-(defmacro ^::ana/numeric >=
+(defmacro ^::numeric >=
   ([x] true)
   ([x y] (bool-expr (core/list 'js* "(~{} >= ~{})" x y)))
   ([x y & more] `(and (>= ~x ~y) (>= ~y ~@more))))
 
-(defmacro ^::ana/numeric ==
+(defmacro ^::numeric ==
   ([x] true)
   ([x y] (bool-expr (core/list 'js* "(~{} === ~{})" x y)))
   ([x y & more] `(and (== ~x ~y) (== ~y ~@more))))
 
-(defmacro ^::ana/numeric dec [x]
+(defmacro ^::numeric dec [x]
   `(- ~x 1))
 
-(defmacro ^::ana/numeric inc [x]
+(defmacro ^::numeric inc [x]
   `(+ ~x 1))
 
-(defmacro ^::ana/numeric zero? [x]
+(defmacro ^::numeric zero? [x]
   `(== ~x 0))
 
-(defmacro ^::ana/numeric pos? [x]
+(defmacro ^::numeric pos? [x]
   `(> ~x 0))
 
-(defmacro ^::ana/numeric neg? [x]
+(defmacro ^::numeric neg? [x]
   `(< ~x 0))
 
-(defmacro ^::ana/numeric max
+(defmacro ^::numeric max
   ([x] x)
   ([x y] `(let [x# ~x, y# ~y]
             (~'js* "((~{} > ~{}) ? ~{} : ~{})" x# y# x# y#)))
   ([x y & more] `(max (max ~x ~y) ~@more)))
 
-(defmacro ^::ana/numeric min
+(defmacro ^::numeric min
   ([x] x)
   ([x y] `(let [x# ~x, y# ~y]
             (~'js* "((~{} < ~{}) ? ~{} : ~{})" x# y# x# y#)))
   ([x y & more] `(min (min ~x ~y) ~@more)))
 
-(defmacro ^::ana/numeric js-mod [num div]
+(defmacro ^::numeric js-mod [num div]
   (core/list 'js* "(~{} % ~{})" num div))
 
-(defmacro ^::ana/numeric bit-not [x]
+(defmacro ^::numeric bit-not [x]
   (core/list 'js* "(~ ~{})" x))
 
-(defmacro ^::ana/numeric bit-and
+(defmacro ^::numeric bit-and
   ([x y] (core/list 'js* "(~{} & ~{})" x y))
   ([x y & more] `(bit-and (bit-and ~x ~y) ~@more)))
 
 ;; internal do not use
-(defmacro ^::ana/numeric unsafe-bit-and
+(defmacro ^::numeric unsafe-bit-and
   ([x y] (bool-expr (core/list 'js* "(~{} & ~{})" x y)))
   ([x y & more] `(unsafe-bit-and (unsafe-bit-and ~x ~y) ~@more)))
 
-(defmacro ^::ana/numeric bit-or
+(defmacro ^::numeric bit-or
   ([x y] (core/list 'js* "(~{} | ~{})" x y))
   ([x y & more] `(bit-or (bit-or ~x ~y) ~@more)))
 
-(defmacro ^::ana/numeric int [x]
+(defmacro ^::numeric int [x]
   `(bit-or ~x 0))
 
-(defmacro ^::ana/numeric bit-xor
+(defmacro ^::numeric bit-xor
   ([x y] (core/list 'js* "(~{} ^ ~{})" x y))
   ([x y & more] `(bit-xor (bit-xor ~x ~y) ~@more)))
 
-(defmacro ^::ana/numeric bit-and-not
+(defmacro ^::numeric bit-and-not
   ([x y] (core/list 'js* "(~{} & ~~{})" x y))
   ([x y & more] `(bit-and-not (bit-and-not ~x ~y) ~@more)))
 
-(defmacro ^::ana/numeric bit-clear [x n]
+(defmacro ^::numeric bit-clear [x n]
   (core/list 'js* "(~{} & ~(1 << ~{}))" x n))
 
-(defmacro ^::ana/numeric bit-flip [x n]
+(defmacro ^::numeric bit-flip [x n]
   (core/list 'js* "(~{} ^ (1 << ~{}))" x n))
 
-(defmacro ^::ana/numeric bit-test [x n]
+(defmacro ^::numeric bit-test [x n]
   (core/list 'js* "((~{} & (1 << ~{})) != 0)" x n))
 
-(defmacro ^::ana/numeric bit-shift-left [x n]
+(defmacro ^::numeric bit-shift-left [x n]
   (core/list 'js* "(~{} << ~{})" x n))
 
-(defmacro ^::ana/numeric bit-shift-right [x n]
+(defmacro ^::numeric bit-shift-right [x n]
   (core/list 'js* "(~{} >> ~{})" x n))
 
-(defmacro ^::ana/numeric bit-shift-right-zero-fill [x n]
+(defmacro ^::numeric bit-shift-right-zero-fill [x n]
   (core/list 'js* "(~{} >>> ~{})" x n))
 
-(defmacro ^::ana/numeric unsigned-bit-shift-right [x n]
+(defmacro ^::numeric unsigned-bit-shift-right [x n]
   (core/list 'js* "(~{} >>> ~{})" x n))
 
-(defmacro ^::ana/numeric bit-set [x n]
+(defmacro ^::numeric bit-set [x n]
   (core/list 'js* "(~{} | (1 << ~{}))" x n))
 
 ;; internal
@@ -660,30 +660,28 @@
 (defn to-property [sym]
   (symbol (core/str "-" sym)))
 
-(defn warn-and-update-protocol [p type env]
-  (when-not (= 'Object p)
-    (if-let [var (cljs.analyzer/resolve-existing-var (dissoc env :locals) p)]
-      (do
-        (when-not (:protocol-symbol var)
-          (cljs.analyzer/warning :invalid-protocol-symbol env {:protocol p}))
-        (when (core/and (:protocol-deprecated cljs.analyzer/*cljs-warnings*)
-                (-> var :deprecated)
-                (not (-> p meta :deprecation-nowarn)))
-          (cljs.analyzer/warning :protocol-deprecated env {:protocol p}))
-        (when (:protocol-symbol var)
-          (swap! env/*compiler* update-in [:cljs.analyzer/namespaces]
-            (fn [ns]
-              (update-in ns [(:ns var) :defs (symbol (name p)) :impls]
-                conj type)))))
-      (when (:undeclared cljs.analyzer/*cljs-warnings*)
-        (cljs.analyzer/warning :undeclared-protocol-symbol env {:protocol p})))))
-
 (defn resolve-var [env sym]
   (let [ret (-> (dissoc env :locals)
-              (cljs.analyzer/resolve-var sym)
+              (utils/resolve-var sym env)
               :name)]
     (assert ret (core/str "Can't resolve: " sym))
     ret))
+
+(defn warn-and-update-protocol [p type env]
+  (when-not (= 'Object p)
+    (if-let [var (resolve-var env p)]
+      (do
+        #_(when-not (:protocol-symbol var)
+            (cljs.analyzer/warning :invalid-protocol-symbol env {:protocol p}))
+        #_(when (core/and (:protocol-deprecated cljs.analyzer/*cljs-warnings*)
+                          (-> var :deprecated)
+                          (not (-> p meta :deprecation-nowarn)))
+            (cljs.analyzer/warning :protocol-deprecated env {:protocol p}))
+        (when (:protocol-symbol var)
+          (swap! env/*env* update-in [:namespaces (:ns var) :mappings (symbol (name p)) :impls]
+            conj type)))
+      #_(when (:undeclared cljs.analyzer/*cljs-warnings*)
+          (cljs.analyzer/warning :undeclared-protocol-symbol env {:protocol p})))))
 
 (defn ->impl-map [impls]
   (loop [ret {} s impls]
@@ -798,7 +796,7 @@
         [type assign-impls] (if-let [type (base-type type-sym)]
                               [type base-assign-impls]
                               [(resolve type-sym) proto-assign-impls])]
-    (when (core/and (:extending-base-js-type cljs.analyzer/*cljs-warnings*)
+    #_(when (core/and (:extending-base-js-type cljs.analyzer/*cljs-warnings*)
                     (js-base-type type-sym))
       (cljs.analyzer/warning :extending-base-js-type env
           {:current-symbol type-sym :suggested-symbol (js-base-type type-sym)}))
@@ -851,7 +849,7 @@
 (defn collect-protocols [impls env]
   (->> impls
       (filter core/symbol?)
-      (map #(:name (cljs.analyzer/resolve-var (dissoc env :locals) %)))
+      (map #(:name (utils/resolve-var % (dissoc env :locals))))
       (into #{})))
 
 (defn- build-positional-factory
@@ -862,7 +860,7 @@
        (new ~rname ~@fields))))
 
 (defmacro deftype [t fields & impls]
-  (let [r (:name (cljs.analyzer/resolve-var (dissoc &env :locals) t))
+  (let [r (:name (utils/resolve-var t (dissoc &env :locals)))
         [fpps pmasks] (prepare-protocol-masks &env impls)
         protocols (collect-protocols impls &env)
         t (vary-meta t assoc
@@ -974,7 +972,7 @@
 (defmacro defrecord [rsym fields & impls]
   (let [rsym (vary-meta rsym assoc :internal-ctor true)
         r    (vary-meta
-               (:name (cljs.analyzer/resolve-var (dissoc &env :locals) rsym))
+               (:name (utils/resolve-var rsym (dissoc &env :locals)))
                assoc :internal-ctor true)]
     `(let []
        ~(emit-defrecord &env rsym r fields impls)
@@ -986,7 +984,7 @@
        ~r)))
 
 (defmacro defprotocol [psym & doc+methods]
-  (let [p (:name (cljs.analyzer/resolve-var (dissoc &env :locals) psym))
+  (let [p (:name (utils/resolve-var psym (dissoc &env :locals)))
         psym (vary-meta psym assoc :protocol-symbol true)
         ns-name (-> &env :ns :name)
         fqn (fn [n] (symbol (core/str ns-name "." n)))
@@ -1022,8 +1020,8 @@
   "EXPERIMENTAL"
   [psym x]
   (let [p          (:name
-                    (cljs.analyzer/resolve-var
-                      (dissoc &env :locals) psym))
+                    (utils/resolve-var
+                      psym (dissoc &env :locals)))
         prefix     (protocol-prefix p)
         xsym       (bool-expr (gensym))
         [part bit] (fast-path-protocols p)
@@ -1042,8 +1040,8 @@
   "Returns true if x satisfies the protocol"
   [psym x]
   (let [p          (:name
-                     (cljs.analyzer/resolve-var
-                       (dissoc &env :locals) psym))
+                     (utils/resolve-var
+                       psym (dissoc &env :locals)))
          prefix     (protocol-prefix p)
          xsym       (bool-expr (gensym))
          [part bit] (fast-path-protocols p)
@@ -1102,7 +1100,7 @@
   before the vars are bound to their new values."
   [bindings & body]
   (let [names (take-nth 2 bindings)]
-    (cljs.analyzer/confirm-bindings &env names)
+    #_(cljs.analyzer/confirm-bindings &env names)
     `(with-redefs ~bindings ~@body)))
 
 (defmacro condp
@@ -1155,7 +1153,7 @@
           test "'"
           (when (:line env)
             (core/str " on line " (:line env) " "
-              cljs.analyzer/*cljs-file*)))))
+                      #_cljs.analyzer/*cljs-file*)))))
     (assoc m test expr)))
 
 (defmacro case [e & clauses]
@@ -1404,8 +1402,8 @@
       `(hash-map ~@kvs)
       
       (let [keys (map first (partition 2 kvs))]
-        (core/and (every? #(= (:op %) :constant)
-                    (map #(cljs.analyzer/analyze &env %) keys))
+        (core/and (every? #(= (:op %) :const)
+                    (map #(clojure.tools.analyzer.js/analyze % &env) keys))
                   (= (count (into #{} keys)) (count keys))))
       `(cljs.core.PersistentArrayMap. nil ~(clojure.core// (count kvs) 2) (array ~@kvs) nil)
 
@@ -1426,8 +1424,8 @@
   ([] `cljs.core.PersistentHashSet.EMPTY)
   ([& xs]
     (if (core/and (core/<= (count xs) 8)
-                  (every? #(= (:op %) :constant)
-                    (map #(cljs.analyzer/analyze &env %) xs))
+                  (every? #(= (:op %) :const)
+                    (map #(clojure.tools.analyzer.js/analyze % &env) xs))
                   (= (count (into #{} xs)) (count xs)))
       `(cljs.core.PersistentHashSet. nil
          (cljs.core.PersistentArrayMap. nil ~(count xs) (array ~@(interleave xs (repeat nil))) nil)

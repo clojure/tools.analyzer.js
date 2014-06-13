@@ -160,7 +160,7 @@
                                {:js-op (if (namespace op)
                                          op
                                          (symbol "cljs.core" (name op)))}
-                               (when (-> clj-macro meta ::numeric)
+                               (when (-> clj-macro meta :cljs.core/numeric)
                                  {:numeric true}))
                     ret)))
               (desugar-host-expr form env)))))
