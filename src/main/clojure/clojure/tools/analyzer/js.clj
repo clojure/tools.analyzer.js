@@ -402,3 +402,5 @@
                              (analyze form (assoc env :ns *ns*)))
                       (recur))))))))
         (get-in @*env* [::analyzed-cljs path])))))
+
+(require 'cljs.core)
