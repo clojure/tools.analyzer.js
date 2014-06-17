@@ -289,11 +289,18 @@
      :default  default-expr
      :children [:test :nodes :default]}))
 
+(def ^:private ^:dynamic *deps-map* {:path [] :deps #{}})
 (declare analyze-ns)
+
 (defn ensure-loaded [ns env]
-  (or (-> (env/deref-env) :namespaces ns)
-      (-> (env/deref-env) :js-dependency-index (get (name ns)))
-      (analyze-ns ns)))
+  (binding [*deps-map* (-> *deps-map*
+                         (update-in [:path] conj lib)
+                         (update-in [:deps] conj lib))]
+    (assert (every? #(not (contains? (:deps *deps-map*) %)) deps)
+            (str "Circular dependency detected" (:path *deps-map*)))
+    (or (-> (env/deref-env) :namespaces ns)
+        (-> (env/deref-env) :js-dependency-index (get (name ns)))
+        (analyze-ns ns))))
 
 (defn core-macros []
   (reduce-kv (fn [m k v]
