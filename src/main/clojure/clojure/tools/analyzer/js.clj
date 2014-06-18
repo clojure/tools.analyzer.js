@@ -299,7 +299,12 @@
                          (update-in [:path] conj ns)
                          (update-in [:deps] conj ns))]
     (or (-> (env/deref-env) :namespaces ns)
-        (-> (env/deref-env) :js-dependency-index (get (name ns)))
+        (and (-> (env/deref-env) :js-dependency-index (get (name ns)))
+             (swap! env/*env* update-in [:namespaces ns :mappings] (fnil merge {})
+                    (reduce (fn [m k] (assoc m k {:op        :var
+                                                 :name      k
+                                                 :namespace ns}))
+                            {} refer)))
         (analyze-ns ns))))
 
 (defn core-macros []
@@ -317,8 +322,8 @@
                                   (if as
                                     (assoc m as ns)
                                     m)) {} require)
-        require-mappings (reduce (fn [m [ns {:keys [refer]}]]
-                                   (ensure-loaded ns env)
+        require-mappings (reduce (fn [m [ns {:keys [refer] :as spec}]]
+                                   (ensure-loaded spec env)
                                    ;; TODO: handle (:require [goog.lib :refer [things]]) ?
                                    (reduce #(assoc %1 %2 (get-in (env/deref-env)
                                                                  [:namespaces ns :mappings %2])) m refer))
