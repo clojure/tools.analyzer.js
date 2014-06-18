@@ -292,7 +292,7 @@
 (def ^:private ^:dynamic *deps-map* {:path [] :deps #{}})
 (declare analyze-ns)
 
-(defn ensure-loaded [[ns {:keys [refer]}] env]
+(defn ensure-loaded [ns {:keys [refer]} env]
   (assert (not (contains? (:deps *deps-map*) ns))
           (str "Circular dependency detected :" (conj (:path *deps-map*) ns)))
   (binding [*deps-map* (-> *deps-map*
@@ -323,7 +323,7 @@
                                     (assoc m as ns)
                                     m)) {} require)
         require-mappings (reduce (fn [m [ns {:keys [refer] :as spec}]]
-                                   (ensure-loaded spec env)
+                                   (ensure-loaded ns spec env)
                                    ;; TODO: handle (:require [goog.lib :refer [things]]) ?
                                    (reduce #(assoc %1 %2 (get-in (env/deref-env)
                                                                  [:namespaces ns :mappings %2])) m refer))
