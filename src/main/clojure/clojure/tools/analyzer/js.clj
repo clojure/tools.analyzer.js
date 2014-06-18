@@ -292,12 +292,12 @@
 (def ^:private ^:dynamic *deps-map* {:path [] :deps #{}})
 (declare analyze-ns)
 
-(defn ensure-loaded [ns env]
+(defn ensure-loaded [[ns {:keys [refer]}] env]
+  (assert (not (contains? (:deps *deps-map*) ns))
+          (str "Circular dependency detected :" (conj (:path *deps-map*) ns)))
   (binding [*deps-map* (-> *deps-map*
-                         (update-in [:path] conj lib)
-                         (update-in [:deps] conj lib))]
-    (assert (every? #(not (contains? (:deps *deps-map*) %)) deps)
-            (str "Circular dependency detected" (:path *deps-map*)))
+                         (update-in [:path] conj ns)
+                         (update-in [:deps] conj ns))]
     (or (-> (env/deref-env) :namespaces ns)
         (-> (env/deref-env) :js-dependency-index (get (name ns)))
         (analyze-ns ns))))
