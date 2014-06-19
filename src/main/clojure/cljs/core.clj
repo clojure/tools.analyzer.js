@@ -661,9 +661,9 @@
   (symbol (core/str "-" sym)))
 
 (defn resolve-var [env sym]
-  (let [ret (-> (dissoc env :locals)
-              (utils/resolve-var sym env)
-              :name)]
+  (let [ret (->> (dissoc env :locals)
+                (utils/resolve-var sym)
+                :name)]
     (assert ret (core/str "Can't resolve: " sym))
     ret))
 
