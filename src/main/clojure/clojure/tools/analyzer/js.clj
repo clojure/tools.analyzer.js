@@ -160,7 +160,7 @@
                                          op
                                          (symbol "cljs.core" (name op)))}
                                (when (-> clj-macro meta :cljs.core/numeric)
-                                 {:numeric true}))
+                                 {:tag 'number}))
                     ret)))
               (desugar-host-expr form env)))))
       (desugar-host-expr form env))))
