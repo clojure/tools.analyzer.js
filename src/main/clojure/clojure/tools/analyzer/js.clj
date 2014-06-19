@@ -156,9 +156,6 @@
                   (if (and (seq? ret)
                            (= 'js* (first ret)))
                     (vary-meta ret merge
-                               {:js-op (if (namespace op)
-                                         op
-                                         (symbol "cljs.core" (name op)))}
                                (when (-> clj-macro meta :cljs.core/numeric)
                                  {:tag 'number}))
                     ret)))
