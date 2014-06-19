@@ -142,7 +142,8 @@
   (env/ensure (global-env)
     (if (seq? form)
       (let [op (first form)]
-        (if (specials op)
+        (if (or (not (symbol? op))
+                (specials op))
           form
           (let [clj-macro (maybe-macro op env)]
             (if (and clj-macro
