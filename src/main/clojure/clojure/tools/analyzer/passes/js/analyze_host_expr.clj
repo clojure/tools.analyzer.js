@@ -20,3 +20,11 @@
     (merge (ana/-analyze :const the-class env :class)
            {:form form})
     ast))
+
+(defmethod analyze-host-expr :host-interop
+  [{:keys [m-or-f target] :as ast}]
+  (merge (dissoc ast m-or-f)
+         {:op       :host-call
+          :method   m-or-f
+          :args     []
+          :children [:target :args]}))
