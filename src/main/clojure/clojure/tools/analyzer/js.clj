@@ -95,48 +95,49 @@
     (when (:macro (meta var))
       var)))
 
-;; should js/foo and (js/foo) be handled in a separate op?
 (defn desugar-host-expr [form env]
-  (cond
-   (symbol? form)
-   (let [ns (namespace form)]
-     (if (and ns (not= "js" ns) (not (resolve-ns (symbol ns) env)))
-       (with-meta (list '. (symbol ns) (symbol (str "-" (symbol (name form)))))
-         (meta form))
-       form))
+  (-> (cond
+      (symbol? form)
+      (let [ns (namespace form)]
+        (cond
+         (= "js" ns)
+         (list 'js* (name form))
 
-   (seq? form)
-   (let [[op & expr] form]
-     (if (symbol? op)
-       (let [opname (name op)
-             opns   (namespace op)
-             op-s   (str op)]
-         (cond
+         (and ns (not (resolve-ns (symbol ns) env)))
+         (list '. (symbol ns) (symbol (str "-" (symbol (name form)))))
 
-          (= (first opname) \.)
-          (let [[target & args] expr
-                args (list* (symbol (subs opname 1)) args)]
-            (with-meta (list '. target (if (= 1 (count args))
-                                         (first args) args))
-              (meta form)))
+         :else form))
 
-          (and opns (not= "js" opns) (not (resolve-ns (symbol opns) env)))
-          (let [target (symbol opns)
-                op (symbol opname)]
-            (with-meta (list '. target (if (zero? (count expr))
-                                         op
-                                         (list* op expr)))
-              (meta form)))
+      (and (seq? form)
+           (symbol? (first form)))
+      (let [[op & expr] form
+            opname (name op)
+            opns   (namespace op)
+            op-s   (str op)]
+        (cond
 
+         (= (first opname) \.)
+         (let [[target & args] expr
+               args (list* (symbol (subs opname 1)) args)]
+           (list '. target (if (= 1 (count args))
+                             (first args) args)))
 
-          (= (last opname) \.)
-          (with-meta (list* 'new (symbol (subs op-s 0 (dec (count op-s)))) expr)
-            (meta form))
+         (= (last opname) \.)
+         (list* 'new (symbol (subs op-s 0 (dec (count op-s)))) expr)
 
-          :else form))
-       form))
+         (= "js" opns) ;; (js/foo ..) -> ((js* "foo") ..)
+         (list* (list 'js* opname) expr)
 
-   :else form))
+         (and opns (not (resolve-ns (symbol opns) env)))
+         (let [target (symbol opns)
+               op (symbol opname)]
+           (list '. target (if (zero? (count expr))
+                             op
+                             (list* op expr))))
+
+         :else form))
+      :else form)
+    (with-meta (meta form))))
 
 (defn macroexpand-1 [form env]
   (env/ensure (global-env)
@@ -322,7 +323,6 @@
                                     m)) {} require)
         require-mappings (reduce (fn [m [ns {:keys [refer] :as spec}]]
                                    (ensure-loaded ns spec env)
-                                   ;; TODO: handle (:require [goog.lib :refer [things]]) ?
                                    (reduce #(assoc %1 %2 (get-in (env/deref-env)
                                                                  [:namespaces ns :mappings %2])) m refer))
                                  {} require)
