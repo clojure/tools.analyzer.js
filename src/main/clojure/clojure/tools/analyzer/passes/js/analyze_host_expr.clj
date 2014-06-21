@@ -8,7 +8,8 @@
 
 (ns clojure.tools.analyzer.passes.js.analyze-host-expr
   (:require [clojure.tools.analyzer :as ana]
-            [clojure.tools.analyzer.utils :refer [resolve-var]]))
+            [clojure.tools.analyzer.utils :refer [resolve-var resolve-ns]]
+            [clojure.tools.analyzer.env :as env]))
 
 
 (defmulti analyze-host-expr :op)
@@ -19,6 +20,19 @@
   (if-let [the-class (resolve-var class env)]
     (merge (ana/-analyze :const the-class env :class)
            {:form form})
+    ast))
+
+(defmethod analyze-host-expr :maybe-host-form
+  [{:keys [class field env] :as ast}]
+  (if-let [ns (resolve-ns class env)]
+    (if (get-in (env/deref-env) [:namespaces ns :js-namespace])
+      (let [var {:op          :var
+                 :name        field
+                 :namespace   ns
+                 :assignable? true}]
+        (swap! env/*env* assoc-in [:namespaces ns :mappings field] var)
+        (merge (dissoc ast :class :field) var))
+      ast)
     ast))
 
 (defmethod analyze-host-expr :host-interop

@@ -103,8 +103,8 @@
          (= "js" ns)
          (list 'js* (name form))
 
-         (and ns (not (resolve-ns (symbol ns) env)))
-         (list '. (symbol ns) (symbol (str "-" (symbol (name form)))))
+         ;; (and ns (not (resolve-ns (symbol ns) env)))
+         ;; (list '. (symbol ns) (symbol (str "-" (symbol (name form)))))
 
          :else form))
 
@@ -128,12 +128,12 @@
          (= "js" opns) ;; (js/foo ..) -> ((js* "foo") ..)
          (list* (list 'js* opname) expr)
 
-         (and opns (not (resolve-ns (symbol opns) env)))
-         (let [target (symbol opns)
-               op (symbol opname)]
-           (list '. target (if (zero? (count expr))
-                             op
-                             (list* op expr))))
+         ;; (and opns (not (resolve-ns (symbol opns) env)))
+         ;; (let [target (symbol opns)
+         ;;       op (symbol opname)]
+         ;;   (list '. target (if (zero? (count expr))
+         ;;                     op
+         ;;                     (list* op expr))))
 
          :else form))
       :else form)
@@ -291,20 +291,26 @@
 (def ^:private ^:dynamic *deps-map* {:path [] :deps #{}})
 (declare analyze-ns)
 
-(defn ensure-loaded [ns {:keys [refer]} env]
+(defn ensure-loaded [ns {:keys [refer]}]
   (assert (not (contains? (:deps *deps-map*) ns))
           (str "Circular dependency detected :" (conj (:path *deps-map*) ns)))
   (binding [*deps-map* (-> *deps-map*
                          (update-in [:path] conj ns)
                          (update-in [:deps] conj ns))]
-    (or (-> (env/deref-env) :namespaces ns)
-        (and (-> (env/deref-env) :js-dependency-index (get (name ns)))
-             (swap! env/*env* update-in [:namespaces ns :mappings] (fnil merge {})
-                    (reduce (fn [m k] (assoc m k {:op        :var
-                                                 :name      k
-                                                 :namespace ns}))
-                            {} refer)))
-        (analyze-ns ns))))
+    (let [namespaces (-> (env/deref-env) :namespaces)]
+      (or (and (get namespaces ns)
+               (not (get-in namespaces [ns :js-namespace])))
+          (and (get-in (env/deref-env) [:js-dependency-index (name ns)])
+               (swap! env/*env* update-in [:namespaces ns] merge
+                      {:ns           ns
+                       :js-namespace true})
+               (swap! env/*env* update-in [:namespaces ns :mappings] merge
+                      (reduce (fn [m k] (assoc m k {:op          :var
+                                                   :name        k
+                                                   :namespace   ns
+                                                   :assignable? true}))
+                              {} refer)))
+          (analyze-ns ns)))))
 
 (defn core-macros []
   (reduce-kv (fn [m k v]
@@ -322,7 +328,7 @@
                                     (assoc m as ns)
                                     m)) {} require)
         require-mappings (reduce (fn [m [ns {:keys [refer] :as spec}]]
-                                   (ensure-loaded ns spec env)
+                                   (ensure-loaded ns spec)
                                    (reduce #(assoc %1 %2 (get-in (env/deref-env)
                                                                  [:namespaces ns :mappings %2])) m refer))
                                  {} require)
