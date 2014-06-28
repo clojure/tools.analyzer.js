@@ -56,11 +56,7 @@
 
 ;; TODO: seed cljs.core/cljs.user
 (defn global-env []
-  (atom {:namespaces          '{cljs.core {:mappings       {}
-                                           :aliases        {}
-                                           :macro-mappings {}
-                                           :macro-aliases  {}
-                                           :ns             cljs.core}}
+  (atom {:namespaces          '{}
          :js-dependency-index (deps/js-dependency-index {})}))
 
 (defn empty-env

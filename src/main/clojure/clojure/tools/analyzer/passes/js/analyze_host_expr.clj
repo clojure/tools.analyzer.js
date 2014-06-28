@@ -22,6 +22,7 @@
            {:form form})
     ast))
 
+;;TODO: should theose be handled like :host-field instead?
 (defmethod analyze-host-expr :maybe-host-form
   [{:keys [class field env] :as ast}]
   (if-let [ns (resolve-ns class env)]

@@ -29,11 +29,11 @@
                             unchecked-subtract unchecked-subtract-int unchecked-remainder-int
 
                             bit-and bit-and-not bit-clear bit-flip bit-not bit-or bit-set
-                            bit-test bit-shift-left bit-shift-right bit-xor
+                            bit-test bit-shift-left bit-shift-right bit-xor unsigned-bit-shift-right
 
                             cond-> cond->> as-> some-> some->>])
-  (:require clojure.walk
-            clojure.set
+  (:require [clojure.walk :as walk]
+            [clojure.set :as set]
             cljs.compiler
             [clojure.tools.analyzer.env :as env]
             [clojure.tools.analyzer.utils :as utils]))
@@ -187,7 +187,7 @@
                  IMultiFn IChunkedSeq IChunkedNext IComparable INamed ICloneable IAtom
                  IReset ISwap])
           (iterate (fn [[p b]]
-                     (if (core/== 2147483648 b)
+                     (if (core/== 2147483648 b) ;; 2^31
                        [(core/inc p) 1]
                        [p (core/bit-shift-left b 1)]))
                    [0 1])))
@@ -223,6 +223,7 @@
                   (apply core/str))]
     ;; Google closure advanced compile will stringify and concat strings and
     ;; numbers at compilation time.
+    ;; string tag?
     (list* 'js* (core/str (if (core/string? (first clean-xs)) "(" "(''+")
                           strs ")")
            clean-xs)))
@@ -232,9 +233,10 @@
 
 (defn simple-test-expr? [env ast]
   (core/and
-   (#{:var :invoke :const :dot :js} (:op ast))
+   (#{:var :invoke :const :host-field :host-call :js} (:op ast))
    ('#{boolean seq} (:tag ast))))
 
+;; TODO: suppress warnings
 (defmacro and
   "Evaluates exprs one at a time, from left to right. If a form
   returns logical false (nil or false), and returns that value and
@@ -288,13 +290,12 @@
 
 ;; internal - do not use.
 (defmacro coercive-boolean [x]
-  (with-meta (core/list 'js* "~{}" x)
-    {:tag 'boolean}))
+  (bool-expr (core/list 'js* "~{}" x)))
 
 ;; internal - do not use.
 (defmacro truth_ [x]
-  (assert (clojure.core/symbol? x) "x is substituted twice")
-  (core/list 'js* "(~{} != null && ~{} !== false)" x x))
+  (assert (core/symbol? x) "x is substituted twice")
+  (bool-expr (core/list 'js* "(~{} != null && ~{} !== false)" x x)))
 
 ;; internal - do not use
 (defmacro js-arguments []
@@ -319,9 +320,10 @@
 
 ;; TODO: x must be a symbol, not an arbitrary expression
 (defmacro exists? [x]
+  (assert (core/symbol? x) "x is substituted twice")
   (bool-expr
    (core/list 'js* "typeof ~{} !== 'undefined'"
-              (vary-meta x assoc :cljs.analyzer/no-resolve true))))
+              (vary-meta x assoc :analyzer/allow-undefined true))))
 
 (defmacro undefined? [x]
   (bool-expr (core/list 'js* "(void 0 === ~{})" x)))
@@ -333,7 +335,7 @@
   ;; Google Closure warns about some references to RegExp, so
   ;; (instance? RegExp ...) needs to be inlined, but the expansion
   ;; should preserve the order of argument evaluation.
-  (bool-expr (if (clojure.core/symbol? t)
+  (bool-expr (if (core/symbol? t)
                (core/list 'js* "(~{} instanceof ~{})" o t)
                `(let [t# ~t o# ~o]
                   (~'js* "(~{} instanceof ~{})" o# t#)))))
@@ -549,16 +551,16 @@
   (core/list 'js* "(~{} | (1 << ~{}))" x n))
 
 ;; internal
-(defmacro mask [hash shift]
+(defmacro ^::numeric mask [hash shift]
   (core/list 'js* "((~{} >>> ~{}) & 0x01f)" hash shift))
 
 ;; internal
-(defmacro bitpos [hash shift]
+(defmacro ^::numeric bitpos [hash shift]
   (core/list 'js* "(1 << ~{})" `(mask ~hash ~shift)))
 
 ;; internal
 (defmacro caching-hash [coll hash-fn hash-key]
-  (assert (clojure.core/symbol? hash-key) "hash-key is substituted twice")
+  (assert (core/symbol? hash-key) "hash-key is substituted twice")
   `(let [h# ~hash-key]
      (if-not (nil? h#)
        h#
@@ -584,7 +586,7 @@
 (defn- do-rfn [f1 k fkv]
   `(fn
      ([] (~f1))
-     ~(clojure.walk/postwalk
+     ~(walk/postwalk
        #(if (sequential? %)
           ((if (vector? %) vec identity)
            (core/remove #{k} %))
@@ -602,31 +604,32 @@
 (defn protocol-prefix [psym]
   (core/str (-> (core/str psym) (.replace \. \$) (.replace \/ \$)) "$"))
 
-(def #^:private base-type
-  {nil "null"
-   'object "object"
-   'string "string"
-   'number "number"
-   'array "array"
-   'function "function"
-   'boolean "boolean"
-   'default "_"})
+(def ^:private base-type
+  '{nil        "null"
+    object   "object"
+    string   "string"
+    number   "number"
+    array    "array"
+    function "function"
+    boolean  "boolean"
+    default  "_"})
 
-(def #^:private js-base-type
-  {'js/Boolean "boolean"
-   'js/String "string"
-   'js/Array "array"
-   'js/Object "object"
-   'js/Number "number"
-   'js/Function "function"})
+(def ^:private js-base-type
+  '{js/Boolean  "boolean"
+    js/String   "string"
+    js/Array    "array"
+    js/Object   "object"
+    js/Number   "number"
+    js/Function "function"})
 
+;; TODO: shouldn't the exists? check be done at compile time?
 (defmacro reify [& impls]
-  (let [t      (gensym "t")
+  (let [t        (gensym "t")
         meta-sym (gensym "meta")
         this-sym (gensym "_")
-        locals (keys (:locals &env))
-        ns     (-> &env :ns :name)
-        munge  cljs.compiler/munge]
+        locals   (keys (:locals &env))
+        ns       (:ns &env)
+        munge    cljs.compiler/munge]
     `(do
        (when-not (exists? ~(symbol (core/str ns) (core/str t)))
          (deftype ~t [~@locals ~meta-sym]
@@ -645,8 +648,7 @@
        ~x)))
 
 (defmacro specify [expr & impls]
-  `(cljs.core/specify! (cljs.core/clone ~expr)
-                       ~@impls))
+  `(specify! (clone ~expr) ~@impls))
 
 (defmacro ^:private js-this []
   (core/list 'js* "this"))
@@ -660,25 +662,33 @@
 (defn to-property [sym]
   (symbol (core/str "-" sym)))
 
-(defn resolve-var [env sym]
-  (let [ret (->> (dissoc env :locals)
-                (utils/resolve-var sym)
-                :name)]
-    (assert ret (core/str "Can't resolve: " sym))
-    ret))
+(defn resolved-name [{:keys [ns] :as env} sym]
+  (let [sym-ns (namespace sym)]
+    (cond
+     (= 'Object sym)
+     'Object
+
+     (= "js" sym-ns)
+     (core/symbol (name sym))
+
+     sym-ns
+     (core/symbol (core/str (utils/resolve-ns (core/symbol sym-ns) env)) (name sym))
+
+     :else
+     (core/symbol (core/str ns) (name sym)))))
 
 (defn warn-and-update-protocol [p type env]
   (when-not (= 'Object p)
-    (if-let [var (resolve-var env p)]
+    (if-let [var (utils/resolve-var p (dissoc env :locals))]
       (do
-        #_(when-not (:protocol-symbol var)
+         #_(when-not (:protocol-symbol var)
             (cljs.analyzer/warning :invalid-protocol-symbol env {:protocol p}))
         #_(when (core/and (:protocol-deprecated cljs.analyzer/*cljs-warnings*)
                           (-> var :deprecated)
                           (not (-> p meta :deprecation-nowarn)))
             (cljs.analyzer/warning :protocol-deprecated env {:protocol p}))
         (when (:protocol-symbol var)
-          (swap! env/*env* update-in [:namespaces (:ns var) :mappings (symbol (name p)) :impls]
+          (swap! env/*env* update-in [:namespaces (:ns var) :mappings (core/symbol (name p)) :impls]
                  conj type)))
       #_(when (:undeclared cljs.analyzer/*cljs-warnings*)
           (cljs.analyzer/warning :undeclared-protocol-symbol env {:protocol p})))))
@@ -694,7 +704,7 @@
   (warn-and-update-protocol p tsym env)
   (let [psym       (resolve p)
         pfn-prefix (subs (core/str psym) 0
-                         (clojure.core/inc (.indexOf (core/str psym) "/")))]
+                         (core/inc (.indexOf (core/str psym) "/")))]
     (cons `(aset ~psym ~type true)
           (map (fn [[f & meths :as form]]
                  `(aset ~(symbol (core/str pfn-prefix f))
@@ -711,7 +721,7 @@
 
 (defn adapt-obj-params [type [[this & args :as sig] & body]]
   (core/list (vec args)
-             (list* 'this-as (vary-meta this assoc :tag type) body)))
+             (list* `this-as (vary-meta this assoc :tag type) body)))
 
 (defn adapt-ifn-params [type [[this & args :as sig] & body]]
   (let [self-sym (with-meta 'self__ {:tag type})]
@@ -784,26 +794,25 @@
          [`(set! ~(extend-prefix type-sym pprefix) true)])
        (mapcat
         (fn [sig]
-          (if (= psym 'cljs.core/IFn)
+          (if (= psym `IFn)
             (add-ifn-methods type type-sym sig)
             (add-proto-methods* pprefix type type-sym sig)))
         sigs)))))
 
 (defmacro extend-type [type-sym & impls]
-  (let [env &env
-        resolve (partial resolve-var env)
+  (let [resolve  (partial resolved-name &env)
         impl-map (->impl-map impls)
         [type assign-impls] (if-let [type (base-type type-sym)]
                               [type base-assign-impls]
                               [(resolve type-sym) proto-assign-impls])]
     #_(when (core/and (:extending-base-js-type cljs.analyzer/*cljs-warnings*)
                       (js-base-type type-sym))
-        (cljs.analyzer/warning :extending-base-js-type env
+        (cljs.analyzer/warning :extending-base-js-type &env
                                {:current-symbol type-sym :suggested-symbol (js-base-type type-sym)}))
-    `(do ~@(mapcat #(assign-impls env resolve type-sym type %) impl-map))))
+    `(do ~@(mapcat #(assign-impls &env resolve type-sym type %) impl-map))))
 
 (defn- prepare-protocol-masks [env impls]
-  (let [resolve  (partial resolve-var env)
+  (let [resolve  (partial resolved-name env)
         impl-map (->impl-map impls)
         fpp-pbs  (seq
                   (keep fast-path-protocols
@@ -849,7 +858,7 @@
 (defn collect-protocols [impls env]
   (->> impls
        (filter core/symbol?)
-       (map #(:name (utils/resolve-var % (dissoc env :locals))))
+       (map (partial resolved-name env))
        (into #{})))
 
 (defn- build-positional-factory
@@ -860,7 +869,7 @@
        (new ~rname ~@fields))))
 
 (defmacro deftype [t fields & impls]
-  (let [r (:name (utils/resolve-var t (dissoc &env :locals)))
+  (let [r (resolved-name &env t)
         [fpps pmasks] (prepare-protocol-masks &env impls)
         protocols (collect-protocols impls &env)
         t (vary-meta t assoc
@@ -895,12 +904,12 @@
           ksym (gensym "k")
           impls (concat
                  impls
-                 ['IRecord
-                  'ICloneable
+                 [`IRecord
+                  `ICloneable
                   `(~'-clone [this#] (new ~tagname ~@fields))
-                  'IHash
+                  `IHash
                   `(~'-hash [this#] (caching-hash this# ~'hash-imap ~'__hash))
-                  'IEquiv
+                  `IEquiv
                   `(~'-equiv [this# other#]
                              (if (and other#
                                       (identical? (.-constructor this#)
@@ -908,50 +917,49 @@
                                       (equiv-map this# other#))
                                true
                                false))
-                  'IMeta
+                  `IMeta
                   `(~'-meta [this#] ~'__meta)
-                  'IWithMeta
+                  `IWithMeta
                   `(~'-with-meta [this# ~gs] (new ~tagname ~@(replace {'__meta gs} fields)))
-                  'ILookup
+                  `ILookup
                   `(~'-lookup [this# k#] (-lookup this# k# nil))
                   `(~'-lookup [this# ~ksym else#]
                               (case ~ksym
                                 ~@(mapcat (fn [f] [(keyword f) f]) base-fields)
                                 (get ~'__extmap ~ksym else#)))
-                  'ICounted
+                  `ICounted
                   `(~'-count [this#] (+ ~(count base-fields) (count ~'__extmap)))
-                  'ICollection
+                  `ICollection
                   `(~'-conj [this# entry#]
                             (if (vector? entry#)
                               (-assoc this# (-nth entry# 0) (-nth entry# 1))
                               (reduce -conj
                                       this#
                                       entry#)))
-                  'IAssociative
+                  `IAssociative
                   `(~'-assoc [this# k# ~gs]
                              (condp keyword-identical? k#
                                ~@(mapcat (fn [fld]
                                            [(keyword fld) (list* `new tagname (replace {fld gs '__hash nil} fields))])
                                          base-fields)
                                (new ~tagname ~@(remove #{'__extmap '__hash} fields) (assoc ~'__extmap k# ~gs) nil)))
-                  'IMap
+                  `IMap
                   `(~'-dissoc [this# k#] (if (contains? #{~@(map keyword base-fields)} k#)
                                            (dissoc (with-meta (into {} this#) ~'__meta) k#)
                                            (new ~tagname ~@(remove #{'__extmap '__hash} fields)
                                                 (not-empty (dissoc ~'__extmap k#))
                                                 nil)))
-                  'ISeqable
+                  `ISeqable
                   `(~'-seq [this#] (seq (concat [~@(map #(core/list `vector (keyword %) %) base-fields)]
                                                 ~'__extmap)))
 
-                  'IPrintWithWriter
+                  `IPrintWithWriter
                   `(~'-pr-writer [this# writer# opts#]
                                  (let [pr-pair# (fn [keyval#] (pr-sequential-writer writer# pr-writer "" " " "" opts# keyval#))]
                                    (pr-sequential-writer
                                     writer# pr-pair# ~pr-open ", " "}" opts#
                                     (concat [~@(map #(core/list `vector (keyword %) %) base-fields)]
-                                            ~'__extmap))))
-                  ])
+                                            ~'__extmap))))])
           [fpps pmasks] (prepare-protocol-masks env impls)
           protocols (collect-protocols impls env)
           tagname (vary-meta tagname assoc
@@ -962,7 +970,7 @@
          (extend-type ~tagname ~@(dt->et tagname impls fields true))))))
 
 (defn- build-map-factory [rsym rname fields]
-  (let [fn-name (symbol (core/str 'map-> rsym))
+  (let [fn-name (symbol (core/str "map->" rsym))
         ms (gensym)
         ks (map keyword fields)
         getters (map (fn [k] `(~k ~ms)) ks)]
@@ -971,9 +979,8 @@
 
 (defmacro defrecord [rsym fields & impls]
   (let [rsym (vary-meta rsym assoc :internal-ctor true)
-        r    (vary-meta
-              (:name (utils/resolve-var rsym (dissoc &env :locals)))
-              assoc :internal-ctor true)]
+        r    (vary-meta (resolved-name &env rsym)
+                        assoc :internal-ctor true)]
     `(let []
        ~(emit-defrecord &env rsym r fields impls)
        (set! (.-cljs$lang$type ~r) true)
@@ -984,7 +991,7 @@
        ~r)))
 
 (defmacro defprotocol [psym & doc+methods]
-  (let [p (:name (utils/resolve-var psym (dissoc &env :locals)))
+  (let [p (resolved-name &env psym)
         psym (vary-meta psym assoc :protocol-symbol true)
         ns-name (-> &env :ns :name)
         fqn (fn [n] (symbol (core/str ns-name "." n)))
@@ -1019,9 +1026,7 @@
 (defmacro implements?
   "EXPERIMENTAL"
   [psym x]
-  (let [p          (:name
-                    (utils/resolve-var
-                     psym (dissoc &env :locals)))
+  (let [p          (resolved-name &env psym)
         prefix     (protocol-prefix p)
         xsym       (bool-expr (gensym))
         [part bit] (fast-path-protocols p)
@@ -1039,9 +1044,7 @@
 (defmacro satisfies?
   "Returns true if x satisfies the protocol"
   [psym x]
-  (let [p          (:name
-                    (utils/resolve-var
-                     psym (dissoc &env :locals)))
+  (let [p          (resolved-name &env psym)
         prefix     (protocol-prefix p)
         xsym       (bool-expr (gensym))
         [part bit] (fast-path-protocols p)
@@ -1059,14 +1062,14 @@
          (cljs.core/native-satisfies? ~psym ~xsym)))))
 
 (defmacro lazy-seq [& body]
-  `(new cljs.core/LazySeq nil (fn [] ~@body) nil nil))
+  `(new LazySeq nil (fn [] ~@body) nil nil))
 
 (defmacro delay [& body]
   "Takes a body of expressions and yields a Delay object that will
   invoke the body only the first time it is forced (with force or deref/@), and
   will cache the result and return it on all subsequent force
   calls."
-  `(new cljs.core/Delay (atom {:done false, :value nil}) (fn [] ~@body)))
+  `(new Delay (atom {:done false, :value nil}) (fn [] ~@body)))
 
 (defmacro with-redefs
   "binding => var-symbol temp-value-expr
@@ -1148,7 +1151,7 @@
 (defn- assoc-test [m test expr env]
   (if (contains? m test)
     (throw
-     (clojure.core/IllegalArgumentException.
+     (IllegalArgumentException.
       (core/str "Duplicate case test constant '"
                 test "'"
                 (when (:line env)
@@ -1201,7 +1204,7 @@
      :else
      `(let [~esym ~e]
         (cond
-         ~@(mapcat (fn [[m c]] `((cljs.core/= ~m ~esym) ~c)) pairs)
+         ~@(mapcat (fn [[m c]] `((= ~m ~esym) ~c)) pairs)
          :else ~default)))))
 
 (defmacro assert
@@ -1211,12 +1214,12 @@
      (when *assert*
        `(when-not ~x
           (throw (js/Error.
-                  (cljs.core/str "Assert failed: " (cljs.core/pr-str '~x)))))))
+                  (str "Assert failed: " (cljs.core/pr-str '~x)))))))
   ([x message]
      (when *assert*
        `(when-not ~x
           (throw (js/Error.
-                  (cljs.core/str "Assert failed: " ~message "\n" (cljs.core/pr-str '~x))))))))
+                  (str "Assert failed: " ~message "\n" (cljs.core/pr-str '~x))))))))
 
 (defmacro for
   "List comprehension. Takes a vector of one or more
@@ -1405,7 +1408,7 @@
         (core/and (every? #(= (:op %) :const)
                           (map #(clojure.tools.analyzer.js/analyze % &env) keys))
                   (= (count (into #{} keys)) (count keys))))
-      `(cljs.core.PersistentArrayMap. nil ~(clojure.core// (count kvs) 2) (array ~@kvs) nil)
+      `(cljs.core.PersistentArrayMap. nil ~(core// (count kvs) 2) (array ~@kvs) nil)
 
       :else
       `(cljs.core.PersistentArrayMap.fromArray (array ~@kvs) true false))))
@@ -1455,7 +1458,7 @@
                      (filter (complement sym-or-str?) (keys kvs))
                      (repeatedly gensym))
         obj (gensym "obj")]
-    `(let [~@(apply concat (clojure.set/map-invert expr->local))
+    `(let [~@(apply concat (set/map-invert expr->local))
            ~obj ~(js-obj* (filter-on-keys core/string? kvs))]
        ~@(map (fn [[k v]] `(aset ~obj ~k ~v)) sym-pairs)
        ~@(map (fn [[k v]] `(aset ~obj ~v ~(core/get kvs k))) expr->local)
