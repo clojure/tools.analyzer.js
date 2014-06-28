@@ -376,6 +376,23 @@
      (when metadata
        {:meta metadata}))))
 
+;; TODO: need replace :local :field locals with their interop form to avoid issues
+;; TODO: handle :analyzer/type, :protocol-impl
+(defmethod parse 'fn*
+  [form env]
+  (let [env (if-let [fields (-> form meta :analyzer/fields)]
+              (update-in env [:locals] merge
+                         (reduce (fn [m field]
+                                   (assoc m field {:op      :binding
+                                                   :env     env
+                                                   :form    field
+                                                   :name    field
+                                                   :local   :field
+                                                   :mutable (-> field meta :mutable)}))
+                                 {} fields))
+              env)]
+    (ana/-parse form env)))
+
 (defn ^:dynamic run-passes [ast]
   (binding [elides (into #{:line :column :end-line :end-column :file :source} elides)]
     (-> ast

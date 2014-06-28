@@ -66,7 +66,7 @@
   `(when-not (exists? ~x)
      (def ~x ~init)))
 
-(defmacro ^{:private true} assert-args [fnname & pairs]
+(defmacro ^:private assert-args [fnname & pairs]
   `(do (when-not ~(first pairs)
          (throw (IllegalArgumentException.
                  ~(core/str fnname " requires " (second pairs)))))
@@ -93,7 +93,7 @@
                                                              true)
                                         (= firstb :as) (pb ret (second bs) gvec)
                                         :else (if seen-rest?
-                                                (throw (new Exception "Unsupported binding form, only :as can follow & parameter"))
+                                                (throw (Exception. "Unsupported binding form, only :as can follow & parameter"))
                                                 (recur (pb ret firstb (core/list `nth gvec n nil))
                                                        (core/inc n)
                                                        (next bs)
@@ -104,7 +104,7 @@
                                (core/let [gmap (gensym "map__")
                                           defaults (:or b)]
                                  (core/loop [ret (-> bvec (conj gmap) (conj v)
-                                                    (conj gmap) (conj `(if (seq? ~gmap) (apply core/hash-map ~gmap) ~gmap))
+                                                    (conj gmap) (conj `(if (seq? ~gmap) (apply hash-map ~gmap) ~gmap))
                                                     ((fn [ret]
                                                        (if (:as b)
                                                          (conj ret (:as b) gmap)
@@ -131,12 +131,12 @@
                      (core/keyword? b) (-> bvec (conj (symbol (name b))) (conj v))
                      (vector? b) (pvec bvec b v)
                      (map? b) (pmap bvec b v)
-                     :else (throw (new Exception (core/str "Unsupported binding form: " b))))))
+                     :else (throw (Exception. (core/str "Unsupported binding form: " b))))))
              process-entry (fn [bvec b] (pb bvec (first b) (second b)))]
     (if (every? core/symbol? (map first bents))
       bindings
       (if-let [kwbs (seq (filter #(core/keyword? (first %)) bents))]
-        (throw (new Exception (core/str "Unsupported binding key: " (ffirst kwbs))))
+        (throw (Exception. (core/str "Unsupported binding key: " (ffirst kwbs))))
         (reduce process-entry [] bents)))))
 
 (defmacro let
@@ -669,29 +669,20 @@
      'Object
 
      (= "js" sym-ns)
-     (core/symbol (name sym))
+     (symbol (name sym))
 
      sym-ns
-     (core/symbol (core/str (utils/resolve-ns (core/symbol sym-ns) env)) (name sym))
+     (symbol (core/str (utils/resolve-ns (symbol sym-ns) env)) (name sym))
 
      :else
-     (core/symbol (core/str ns) (name sym)))))
+     (symbol (core/str ns) (name sym)))))
 
 (defn warn-and-update-protocol [p type env]
   (when-not (= 'Object p)
     (if-let [var (utils/resolve-var p (dissoc env :locals))]
-      (do
-         #_(when-not (:protocol-symbol var)
-            (cljs.analyzer/warning :invalid-protocol-symbol env {:protocol p}))
-        #_(when (core/and (:protocol-deprecated cljs.analyzer/*cljs-warnings*)
-                          (-> var :deprecated)
-                          (not (-> p meta :deprecation-nowarn)))
-            (cljs.analyzer/warning :protocol-deprecated env {:protocol p}))
-        (when (:protocol-symbol var)
-          (swap! env/*env* update-in [:namespaces (:ns var) :mappings (core/symbol (name p)) :impls]
-                 conj type)))
-      #_(when (:undeclared cljs.analyzer/*cljs-warnings*)
-          (cljs.analyzer/warning :undeclared-protocol-symbol env {:protocol p})))))
+      (when (-> var meta :protocol-symbol)
+        (swap! env/*env* update-in [:namespaces (:ns var) :mappings (symbol (name p))]
+               vary-meta update-in [:impls] conj type)))))
 
 (defn ->impl-map [impls]
   (loop [ret {} s impls]
@@ -717,7 +708,7 @@
   [tsym sym] `(.. ~tsym ~(to-property sym)))
 
 (core/defmethod extend-prefix :default
-  [tsym sym] `(.. ~tsym -prototype ~(to-property sym)))
+  [tsym sym] `(.. ~tsym ~'-prototype ~(to-property sym)))
 
 (defn adapt-obj-params [type [[this & args :as sig] & body]]
   (core/list (vec args)
@@ -805,10 +796,6 @@
         [type assign-impls] (if-let [type (base-type type-sym)]
                               [type base-assign-impls]
                               [(resolve type-sym) proto-assign-impls])]
-    #_(when (core/and (:extending-base-js-type cljs.analyzer/*cljs-warnings*)
-                      (js-base-type type-sym))
-        (cljs.analyzer/warning :extending-base-js-type &env
-                               {:current-symbol type-sym :suggested-symbol (js-base-type type-sym)}))
     `(do ~@(mapcat #(assign-impls &env resolve type-sym type %) impl-map))))
 
 (defn- prepare-protocol-masks [env impls]
@@ -840,12 +827,9 @@
 
 (defn dt->et
   ([type specs fields]
-     (dt->et type specs fields false))
-  ([type specs fields inline]
-     (let [annots {:cljs.analyzer/type type
-                   :cljs.analyzer/fields fields
-                   :protocol-impl true
-                   :protocol-inline inline}]
+     (let [annots {:analyzer/type          type
+                   :analyzer/fields        fields
+                   :protocol-impl true}]
        (loop [ret [] specs specs]
          (if (seq specs)
            (let [ret (-> (conj ret (first specs))
@@ -872,16 +856,16 @@
   (let [r (resolved-name &env t)
         [fpps pmasks] (prepare-protocol-masks &env impls)
         protocols (collect-protocols impls &env)
-        t (vary-meta t assoc
-                     :protocols protocols
-                     :skip-protocol-flag fpps) ]
+        t (vary-meta t merge
+                     {:protocols          protocols
+                      :skip-protocol-flag fpps}) ]
     (if (seq impls)
       `(do
          (deftype* ~t ~fields ~pmasks)
          (set! (.-cljs$lang$type ~t) true)
          (set! (.-cljs$lang$ctorStr ~t) ~(core/str r))
          (set! (.-cljs$lang$ctorPrWriter ~t) (fn [this# writer# opt#] (-write writer# ~(core/str r))))
-         (extend-type ~t ~@(dt->et t impls fields true))
+         (extend-type ~t ~@(dt->et t impls fields))
          ~(build-positional-factory t r fields)
          ~t)
       `(do
@@ -962,12 +946,12 @@
                                             ~'__extmap))))])
           [fpps pmasks] (prepare-protocol-masks env impls)
           protocols (collect-protocols impls env)
-          tagname (vary-meta tagname assoc
-                             :protocols protocols
-                             :skip-protocol-flag fpps)]
+          tagname (vary-meta tagname merge
+                             {:protocols          protocols
+                              :skip-protocol-flag fpps})]
       `(do
          (~'defrecord* ~tagname ~hinted-fields ~pmasks)
-         (extend-type ~tagname ~@(dt->et tagname impls fields true))))))
+         (extend-type ~tagname ~@(dt->et tagname impls fields))))))
 
 (defn- build-map-factory [rsym rname fields]
   (let [fn-name (symbol (core/str "map->" rsym))
@@ -992,9 +976,9 @@
 
 (defmacro defprotocol [psym & doc+methods]
   (let [p (resolved-name &env psym)
-        psym (vary-meta psym assoc :protocol-symbol true)
-        ns-name (-> &env :ns :name)
-        fqn (fn [n] (symbol (core/str ns-name "." n)))
+        psym (vary-meta psym assoc :protocol-symbol true :impls #{})
+        ns-name (-> &env :ns name)
+        fqn (fn [n] (symbol ns-name (core/str n)))
         prefix (protocol-prefix p)
         methods (if (core/string? (first doc+methods)) (next doc+methods) doc+methods)
         expand-sig (fn [fname slot sig]
@@ -1003,7 +987,7 @@
                          (. ~(first sig) ~slot ~@sig)
                          (let [x# (if (nil? ~(first sig)) nil ~(first sig))]
                            ((or
-                             (aget ~(fqn fname) (goog.typeOf x#))
+                             (aget ~(fqn fname) (js/goog.typeOf x#))
                              (aget ~(fqn fname) "_")
                              (throw (missing-protocol
                                      ~(core/str psym "." fname) ~(first sig))))
@@ -1382,23 +1366,23 @@
    assoc :tag 'array))
 
 (defmacro list
-  ([] `cljs.core.List.EMPTY)
+  ([] `js/cljs.core.List.EMPTY)
   ([x & xs]
      `(-conj (list ~@xs) ~x)))
 
 (defmacro vector
-  ([] `cljs.core.PersistentVector.EMPTY)
+  ([] `js/cljs.core.PersistentVector.EMPTY)
   ([& xs]
      (let [cnt (count xs)]
        (if (core/< cnt 32)
-         `(cljs.core.PersistentVector. nil ~cnt 5
-                                       cljs.core.PersistentVector.EMPTY_NODE (array ~@xs) nil)
+         `(cljs.core/PersistentVector. nil ~cnt 5
+                                       js/cljs.core.PersistentVector.EMPTY_NODE (array ~@xs) nil)
          (vary-meta
-          `(cljs.core.PersistentVector.fromArray (array ~@xs) true)
+          `(js/cljs.core.PersistentVector.fromArray (array ~@xs) true)
           assoc :tag 'cljs.core/PersistentVector)))))
 
 (defmacro array-map
-  ([] `cljs.core.PersistentArrayMap.EMPTY)
+  ([] `js/cljs.core.PersistentArrayMap.EMPTY)
   ([& kvs]
      (core/cond
       (core/> (count kvs) 16)
@@ -1408,33 +1392,33 @@
         (core/and (every? #(= (:op %) :const)
                           (map #(clojure.tools.analyzer.js/analyze % &env) keys))
                   (= (count (into #{} keys)) (count keys))))
-      `(cljs.core.PersistentArrayMap. nil ~(core// (count kvs) 2) (array ~@kvs) nil)
+      `(cljs.core/PersistentArrayMap. nil ~(core// (count kvs) 2) (array ~@kvs) nil)
 
       :else
-      `(cljs.core.PersistentArrayMap.fromArray (array ~@kvs) true false))))
+      `(js/cljs.core.PersistentArrayMap.fromArray (array ~@kvs) true false))))
 
 (defmacro hash-map
-  ([] `cljs.core.PersistentHashMap.EMPTY)
+  ([] `js/cljs.core.PersistentHashMap.EMPTY)
   ([& kvs]
      (let [pairs (partition 2 kvs)
            ks    (map first pairs)
            vs    (map second pairs)]
        (vary-meta
-        `(cljs.core.PersistentHashMap.fromArrays (array ~@ks) (array ~@vs))
+        `(js/cljs.core.PersistentHashMap.fromArrays (array ~@ks) (array ~@vs))
         assoc :tag 'cljs.core/PersistentHashMap))))
 
 (defmacro hash-set
-  ([] `cljs.core.PersistentHashSet.EMPTY)
+  ([] `js/cljs.core.PersistentHashSet.EMPTY)
   ([& xs]
      (if (core/and (core/<= (count xs) 8)
                    (every? #(= (:op %) :const)
                            (map #(clojure.tools.analyzer.js/analyze % &env) xs))
                    (= (count (into #{} xs)) (count xs)))
-       `(cljs.core.PersistentHashSet. nil
-                                      (cljs.core.PersistentArrayMap. nil ~(count xs) (array ~@(interleave xs (repeat nil))) nil)
+       `(cljs.core/PersistentHashSet. nil
+                                      (cljs.core/PersistentArrayMap. nil ~(count xs) (array ~@(interleave xs (repeat nil))) nil)
                                       nil)
        (vary-meta
-        `(cljs.core.PersistentHashSet.fromArray (array ~@xs) true)
+        `(js/cljs.core.PersistentHashSet.fromArray (array ~@xs) true)
         assoc :tag 'cljs.core/PersistentHashSet))))
 
 (defn js-obj* [kvs]
@@ -1620,6 +1604,7 @@
            ~(gen-apply-to-helper))))
      (set! ~'*unchecked-if* false)))
 
+;; goog.string should be an auto-require
 (defmacro with-out-str
   "Evaluates exprs in a context in which *print-fn* is bound to .append
   on a fresh StringBuffer.  Returns the string created by any nested
