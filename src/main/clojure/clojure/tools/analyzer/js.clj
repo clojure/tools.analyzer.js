@@ -14,7 +14,7 @@
              :refer [analyze analyze-in-env]
              :rename {analyze -analyze}]
             [clojure.tools.analyzer
-             [utils :refer [resolve-var resolve-ns ctx -source-info]]
+             [utils :refer [resolve-var resolve-ns ctx -source-info dissoc-env]]
              [ast :refer [prewalk postwalk]]
              [env :as env :refer [*env*]]]
             [clojure.tools.analyzer.passes
@@ -195,7 +195,7 @@
     (ana/-analyze-form form env)))
 
 (defn parse-type
-  [op [_ name fields pmasks :as form] {:keys [ns] :as env}]
+  [op [_ name fields pmasks body :as form] {:keys [ns] :as env}]
   (let [fields-expr (mapv (fn [name]
                             {:env     env
                              :form    name
@@ -204,23 +204,27 @@
                              :local   :field
                              :op      :binding})
                           fields)
-        protocols (-> name meta :protocols)]
+        protocols (-> name meta :protocols)
 
-    (swap! *env* assoc-in [:namespaces ns :mappings name]
-           {:op        :type
-            :name      name
-            :ns        ns
-            :fields    fields
-            :protocols protocols})
+        _ (swap! *env* assoc-in [:namespaces ns :mappings name]
+                 {:op        :type
+                  :name      name
+                  :ns        ns
+                  :fields    fields
+                  :protocols protocols})
+
+        body-expr (analyze body (assoc env
+                                  :locals (zipmap fields (map dissoc-env fields-expr))))]
 
     {:op        op
      :env       env
      :form      form
      :name      name
      :fields    fields-expr
+     :body      body-expr
      :pmasks    pmasks
      :protocols protocols
-     :children  [:fields]}))
+     :children  [:fields :body]}))
 
 (defmethod parse 'deftype*
   [form env]
@@ -335,7 +339,7 @@
                                   m)) {} require-macros)
         core-macro-mappings (apply dissoc (core-macros) (:exclude refer-clojure))
         macro-mappings (reduce (fn [m [ns {:keys [refer]}]]
-                                 (clojure.core/require ns)
+                                 (c.c/require ns)
                                  (reduce #(assoc %1 %2 (ns-resolve ns (name %2))) m refer))
                                {} require-macros)]
 
@@ -375,23 +379,6 @@
        {:doc docstring})
      (when metadata
        {:meta metadata}))))
-
-;; TODO: need replace :local :field locals with their interop form to avoid issues
-;; TODO: handle :analyzer/type, :protocol-impl
-(defmethod parse 'fn*
-  [form env]
-  (let [env (if-let [fields (-> form meta :analyzer/fields)]
-              (update-in env [:locals] merge
-                         (reduce (fn [m field]
-                                   (assoc m field {:op      :binding
-                                                   :env     env
-                                                   :form    field
-                                                   :name    field
-                                                   :local   :field
-                                                   :mutable (-> field meta :mutable)}))
-                                 {} fields))
-              env)]
-    (ana/-parse form env)))
 
 (defn ^:dynamic run-passes [ast]
   (binding [elides (into #{:line :column :end-line :end-column :file :source} elides)]

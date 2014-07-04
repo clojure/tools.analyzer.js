@@ -177,15 +177,14 @@
 
 (def fast-path-protocols
   "protocol fqn -> [partition number, bit]"
-  (zipmap (map #(symbol "cljs.core" (core/str %))
-               '[IFn ICounted IEmptyableCollection ICollection IIndexed ASeq ISeq INext
-                 ILookup IAssociative IMap IMapEntry ISet IStack IVector IDeref
-                 IDerefWithTimeout IMeta IWithMeta IReduce IKVReduce IEquiv IHash
-                 ISeqable ISequential IList IRecord IReversible ISorted IPrintWithWriter IWriter
-                 IPrintWithWriter IPending IWatchable IEditableCollection ITransientCollection
-                 ITransientAssociative ITransientMap ITransientVector ITransientSet
-                 IMultiFn IChunkedSeq IChunkedNext IComparable INamed ICloneable IAtom
-                 IReset ISwap])
+  (zipmap `[IFn ICounted IEmptyableCollection ICollection IIndexed ASeq ISeq INext
+            ILookup IAssociative IMap IMapEntry ISet IStack IVector IDeref
+            IDerefWithTimeout IMeta IWithMeta IReduce IKVReduce IEquiv IHash
+            ISeqable ISequential IList IRecord IReversible ISorted IPrintWithWriter IWriter
+            IPrintWithWriter IPending IWatchable IEditableCollection ITransientCollection
+            ITransientAssociative ITransientMap ITransientVector ITransientSet
+            IMultiFn IChunkedSeq IChunkedNext IComparable INamed ICloneable IAtom
+            IReset ISwap]
           (iterate (fn [[p b]]
                      (if (core/== 2147483648 b) ;; 2^31
                        [(core/inc p) 1]
@@ -705,10 +704,10 @@
 (core/defmulti extend-prefix (fn [tsym sym] (-> tsym meta :extend)))
 
 (core/defmethod extend-prefix :instance
-  [tsym sym] `(.. ~tsym ~(to-property sym)))
+  [tsym sym] `(cljs.core/.. ~tsym ~(to-property sym)))
 
 (core/defmethod extend-prefix :default
-  [tsym sym] `(.. ~tsym ~'-prototype ~(to-property sym)))
+  [tsym sym] `(cljs.core/.. ~tsym ~'-prototype ~(to-property sym)))
 
 (defn adapt-obj-params [type [[this & args :as sig] & body]]
   (core/list (vec args)
@@ -859,22 +858,15 @@
         t (vary-meta t merge
                      {:protocols          protocols
                       :skip-protocol-flag fpps}) ]
-    (if (seq impls)
-      `(do
-         (deftype* ~t ~fields ~pmasks)
-         (set! (.-cljs$lang$type ~t) true)
-         (set! (.-cljs$lang$ctorStr ~t) ~(core/str r))
-         (set! (.-cljs$lang$ctorPrWriter ~t) (fn [this# writer# opt#] (-write writer# ~(core/str r))))
-         (extend-type ~t ~@(dt->et t impls fields))
-         ~(build-positional-factory t r fields)
-         ~t)
-      `(do
-         (deftype* ~t ~fields ~pmasks)
-         (set! (.-cljs$lang$type ~t) true)
-         (set! (.-cljs$lang$ctorStr ~t) ~(core/str r))
-         (set! (.-cljs$lang$ctorPrWriter ~t) (fn [this# writer# opts#] (-write writer# ~(core/str r))))
-         ~(build-positional-factory t r fields)
-         ~t))))
+    `(do
+       (~'deftype* ~t ~fields ~pmasks
+         ~(if (seq impls)
+            `(extend-type ~t ~@(dt->et t impls fields))))
+       (set! (.-cljs$lang$type ~t) true)
+       (set! (.-cljs$lang$ctorStr ~t) ~(core/str r))
+       (set! (.-cljs$lang$ctorPrWriter ~t) (fn [this# writer# opt#] (-write writer# ~(core/str r))))
+       ~(build-positional-factory t r fields)
+       ~t)))
 
 (defn- emit-defrecord
   "Do not use this directly - use defrecord"
@@ -950,8 +942,8 @@
                              {:protocols          protocols
                               :skip-protocol-flag fpps})]
       `(do
-         (~'defrecord* ~tagname ~hinted-fields ~pmasks)
-         (extend-type ~tagname ~@(dt->et tagname impls fields))))))
+         (~'defrecord* ~tagname ~hinted-fields ~pmasks
+           (extend-type ~tagname ~@(dt->et tagname impls fields)))))))
 
 (defn- build-map-factory [rsym rname fields]
   (let [fn-name (symbol (core/str "map->" rsym))
