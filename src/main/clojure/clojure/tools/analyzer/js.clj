@@ -381,7 +381,8 @@
        {:meta metadata}))))
 
 (defn ^:dynamic run-passes [ast]
-  (binding [elides (into #{:line :column :end-line :end-column :file :source} elides)]
+  (binding [elides (merge {:all #{:line :column :end-line :end-column :file :source}}
+                          elides)]
     (-> ast
 
       uniquify-locals
