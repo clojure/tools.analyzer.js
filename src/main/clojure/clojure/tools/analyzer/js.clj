@@ -62,7 +62,7 @@
 (defn empty-env
   "Returns an empty env map"
   []
-  {:context    :statement
+  {:context    :ctx/statement
    :locals     {}
    :ns         *ns*})
 
@@ -247,7 +247,7 @@
                     (conj segs s)
                     (recur (conj segs (subs s 0 idx))
                            (subs s (inc (.indexOf s "}" idx)))))))
-        exprs (mapv (analyze-in-env (ctx env :expr)) args)]
+        exprs (mapv (analyze-in-env (ctx env :ctx/expr)) args)]
     (merge
      {:op       :js
       :env      env
