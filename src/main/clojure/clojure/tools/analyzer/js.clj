@@ -54,9 +54,9 @@
 
 (def ^:dynamic *ns* 'cljs.user)
 
-;; TODO: seed cljs.core/cljs.user
 (defn global-env []
-  (atom {:namespaces          '{}
+  (atom {:namespaces          '{goog {:mappings {}, :js-namespace true, :ns goog}
+                                Math {:mappings {}, :js-namespace true, :ns Math}}
          :js-dependency-index (deps/js-dependency-index {})}))
 
 (defn empty-env
@@ -99,8 +99,17 @@
          (= "js" ns)
          (list 'js* (name form))
 
-         ;; (and ns (not (resolve-ns (symbol ns) env)))
-         ;; (list '. (symbol ns) (symbol (str "-" (symbol (name form)))))
+         (and ns (get-in (env/deref-env)
+                         [:namespaces (resolve-ns (symbol ns) env) :js-namespace]))
+         (let [target (symbol "js" (str (resolve-ns (symbol ns) env)))
+               op (symbol (name form))]
+           (list '. target (symbol (str "-" (name form)))))
+
+         (and (not ns)
+              (not (get-in env [:locals form]))
+              (= :js-var (:op (resolve-var form env))))
+         (let [{:keys [namespace name]} (resolve-var form env)]
+           (list '. (symbol "js" (str namespace)) (symbol (str "-" name))))
 
          :else form))
 
@@ -124,12 +133,17 @@
          (= "js" opns) ;; (js/foo ..) -> ((js* "foo") ..)
          (list* (list 'js* opname) expr)
 
-         ;; (and opns (not (resolve-ns (symbol opns) env)))
-         ;; (let [target (symbol opns)
-         ;;       op (symbol opname)]
-         ;;   (list '. target (if (zero? (count expr))
-         ;;                     op
-         ;;                     (list* op expr))))
+         (and opns (get-in (env/deref-env)
+                           [:namespaces (resolve-ns (symbol opns) env) :js-namespace]))
+         (let [target (symbol "js" (str (resolve-ns (symbol opns) env)))
+               op (symbol opname)]
+           (list '. target (list* op expr)))
+
+         (and (not opns)
+              (not (get-in env [:locals op]))
+              (= :js-var (:op (resolve-var op env))))
+         (let [{:keys [namespace name]} (resolve-var op env)]
+           (list '. (symbol "js" (str namespace)) (list* name expr)))
 
          :else form))
       :else form)
@@ -305,10 +319,9 @@
                       {:ns           ns
                        :js-namespace true})
                (swap! env/*env* update-in [:namespaces ns :mappings] merge
-                      (reduce (fn [m k] (assoc m k {:op          :var
+                      (reduce (fn [m k] (assoc m k {:op          :js-var
                                                    :name        k
-                                                   :namespace   ns
-                                                   :assignable? true}))
+                                                   :namespace   ns}))
                               {} refer)))
           (analyze-ns ns)))))
 

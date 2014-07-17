@@ -22,20 +22,6 @@
            {:form form})
     ast))
 
-;;TODO: should theose be handled like :host-field instead?
-(defmethod analyze-host-expr :maybe-host-form
-  [{:keys [class field env] :as ast}]
-  (if-let [ns (resolve-ns class env)]
-    (if (get-in (env/deref-env) [:namespaces ns :js-namespace])
-      (let [var {:op          :var
-                 :name        field
-                 :namespace   ns
-                 :assignable? true}]
-        (swap! env/*env* assoc-in [:namespaces ns :mappings field] var)
-        (merge (dissoc ast :class :field) var))
-      ast)
-    ast))
-
 (defmethod analyze-host-expr :host-interop
   [{:keys [m-or-f target] :as ast}]
   (merge (dissoc ast m-or-f)
