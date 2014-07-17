@@ -23,12 +23,12 @@
              [elide-meta :refer [elide-meta elides]]
              [warn-earmuff :refer [warn-earmuff]]
              [add-binding-atom :refer [add-binding-atom]]
-             [uniquify :refer [uniquify-locals]]
-             [constant-lifter :refer [constant-lift]]]
+             [uniquify :refer [uniquify-locals]]]
             [clojure.tools.analyzer.passes.js
              [annotate-tag :refer [annotate-tag]]
              [infer-tag :refer [infer-tag]]
-             [analyze-host-expr :refer [analyze-host-expr]]]
+             [analyze-host-expr :refer [analyze-host-expr]]
+             [constant-lifter :refer [constant-lift]]]
             [clojure.tools.analyzer.js.utils
              :refer [desugar-ns-specs validate-ns-specs ns-resource source-path res-path]]
             [cljs
