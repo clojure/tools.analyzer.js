@@ -144,7 +144,7 @@
           form
           (let [clj-macro (maybe-macro op env)]
             (if (and clj-macro
-                     (not (resolve-var op env))
+                     ;; (not (resolve-var op env))
                      (not (-> env :locals (get op))))
               (with-bindings (merge {#'c.c/*ns* (create-ns *ns*)}
                                     (when-not (thread-bound? #'*ns*)
