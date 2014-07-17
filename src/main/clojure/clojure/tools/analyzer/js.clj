@@ -213,8 +213,8 @@
                   :fields    fields
                   :protocols protocols})
 
-        body-expr (analyze body (assoc env
-                                  :locals (zipmap fields (map dissoc-env fields-expr))))]
+        body-expr (-analyze body (assoc env
+                                   :locals (zipmap fields (map dissoc-env fields-expr))))]
 
     {:op        op
      :env       env
