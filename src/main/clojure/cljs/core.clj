@@ -875,7 +875,7 @@
         fields (vec (map #(with-meta % nil) fields))
         base-fields fields
         pr-open (core/str "#" (.getNamespace rname) "." (.getName rname) "{")
-        fields (conj fields '__meta '__extmap (with-meta '__hash {:mutable true}))]
+        fields (conj fields '__meta '__extmap '^:mutable __hash)]
     (let [gs (gensym)
           ksym (gensym "k")
           impls (concat
@@ -979,7 +979,7 @@
                          (. ~(first sig) ~slot ~@sig)
                          (let [x# (if (nil? ~(first sig)) nil ~(first sig))]
                            ((or
-                             (aget ~(fqn fname) (js/goog.typeOf x#))
+                             (aget ~(fqn fname) (goog/typeOf x#))
                              (aget ~(fqn fname) "_")
                              (throw (missing-protocol
                                      ~(core/str psym "." fname) ~(first sig))))
