@@ -27,6 +27,7 @@
             [clojure.tools.analyzer.passes.js
              [annotate-tag :refer [annotate-tag]]
              [infer-tag :refer [infer-tag]]
+             [validate :refer [validate]]
              [analyze-host-expr :refer [analyze-host-expr]]
              [constant-lifter :refer [constant-lift]]]
             [clojure.tools.analyzer.js.utils
@@ -412,6 +413,7 @@
                     annotate-tag
                     analyze-host-expr
                     infer-tag
+                    validate
                     constant-lift))))))
 
 (defn analyze
