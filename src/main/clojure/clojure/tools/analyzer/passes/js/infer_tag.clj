@@ -161,15 +161,16 @@
 
 (defmethod -infer-tag :new
   [{:keys [class] :as ast}]
-  (assoc ast :tag (case (:form class)
-                    js/Object   'object
-                    js/String   'string
-                    js/Array    'array
-                    js/Number   'number
-                    js/Function 'function
-                    js/Boolean  'boolean
-                    (:form class))))
-
+  (let [class (or (first (:raw-forms class))
+                  (:form class))]
+   (assoc ast :tag (case class
+                     js/Object   'object
+                     js/String   'string
+                     js/Array    'array
+                     js/Number   'number
+                     js/Function 'function
+                     js/Boolean  'boolean
+                     class))))
 (defn infer-tag
   [{:keys [tag] :as ast}]
   (merge (-infer-tag ast)
