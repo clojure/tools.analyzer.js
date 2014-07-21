@@ -14,6 +14,12 @@
 (defmulti -validate :op)
 (defmethod -validate :default [ast] ast)
 
+(defmethod -validate :maybe-class [{:keys [class env] :as ast}]
+  (throw (ex-info (str "Cannot resolve: " class)
+                  (merge {:sym class
+                          :ast prewalk ast cleanup}
+                         (source-info env)))) )
+
 (defn validate-tag [t {:keys [env] :as ast}]
   (let [tag (ast t)]
     (if (symbol? tag)
