@@ -17,7 +17,7 @@
 (defmethod -validate :maybe-class [{:keys [class env] :as ast}]
   (throw (ex-info (str "Cannot resolve: " class)
                   (merge {:sym class
-                          :ast prewalk ast cleanup}
+                          :ast (prewalk ast cleanup)}
                          (source-info env)))) )
 
 (defn validate-tag [t {:keys [env] :as ast}]
