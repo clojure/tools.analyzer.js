@@ -18,7 +18,7 @@
 (defmethod analyze-host-expr :maybe-class
   [{:keys [class env form] :as ast}]
   (if-let [the-class (resolve-var class env)]
-    (merge (ana/-analyze :const the-class env :class)
+    (merge (ana/-analyze :const the-class env :type)
            {:form form})
     ast))
 
