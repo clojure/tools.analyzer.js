@@ -24,16 +24,18 @@
   (let [tag (ast t)]
     (if (symbol? tag)
       (if-let [var (resolve-var tag env)]
-        (if (or (= :type (:op var))
+        (symbol (str (:ns var)) (str (:name var)))
+        #_(if (or (= :type (:op var))
                 (:protocol (meta var)))
-          (symbol (:ns var) (:name var))
-          (throw (ex-info (str "Not type/protocol var used as a tag: " t)
+          (symbol (str (:ns var)) (str (:name var)))
+          (throw (ex-info (str "Not type/protocol var used as a tag: " tag)
                           (merge {:var var
                                   :ast (prewalk ast cleanup)}
                                  (source-info env)))))
-        (if (or ('#{boolean string number clj-nil any function object array} tag)
+        tag
+        #_(if (or ('#{boolean string number clj-nil any function object array} tag)
                 (and (namespace tag)
-                     (not (resolve-ns (symbol (namespace tag))))))
+                     (not (resolve-ns (symbol (namespace tag)) env))))
           tag
           (throw (ex-info (str "Cannot resolve: " tag)
                           (merge {:sym tag
