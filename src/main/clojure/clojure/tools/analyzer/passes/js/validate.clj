@@ -17,7 +17,7 @@
 (defn validate-tag [t {:keys [env] :as ast}]
   (let [tag (ast t)]
     (if (symbol? tag)
-      (if-let [var (resolve-var t env)]
+      (if-let [var (resolve-var tag env)]
         (if (or (= :type (:op var))
                 (:protocol (meta var)))
           (symbol (:ns var) (:name var))
@@ -25,15 +25,16 @@
                           (merge {:var var
                                   :ast (prewalk ast cleanup)}
                                  (source-info env)))))
-        (if (or (not (namespace t))
-                (resolve-ns (symbol (namespace t))))
-          (throw (ex-info (str "Cannot resolve: " t)
-                          (merge {:sym t
+        (if (or ('#{boolean string number clj-nil any function object array} tag)
+                (and (namespace tag)
+                     (not (resolve-ns (symbol (namespace tag))))))
+          tag
+          (throw (ex-info (str "Cannot resolve: " tag)
+                          (merge {:sym tag
                                   :ast (prewalk ast cleanup)}
-                                 (source-info env))))
-          t))
-      (throw (ex-info (str "Invalid tag: " t)
-                      (merge {:tag t
+                                 (source-info env))))))
+      (throw (ex-info (str "Invalid tag: " tag)
+                      (merge {:tag tag
                               :ast (prewalk ast cleanup)}
                              (source-info env)))))))
 
