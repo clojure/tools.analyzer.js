@@ -6078,7 +6078,7 @@ reduces them without incurring seq initialization"
   Returns a new sorted map with supplied mappings, using the supplied comparator."
   ([comparator & keyvals]
      (loop [in (seq keyvals)
-            out (cljs.core.PersistentTreeMap. (fn->comparator comparator) nil 0 nil 0)]
+            out (PersistentTreeMap. (fn->comparator comparator) nil 0 nil 0)]
        (if in
          (recur (nnext in) (assoc out (first in) (second in)))
          out))))
@@ -6480,7 +6480,7 @@ reduces them without incurring seq initialization"
   "Returns a new sorted set with supplied keys, using the supplied comparator."
   ([comparator & keys]
    (reduce -conj
-           (cljs.core.PersistentTreeSet. nil (sorted-map-by comparator) 0)
+           (PersistentTreeSet. nil (sorted-map-by comparator) 0)
            keys)))
 
 (defn replace
