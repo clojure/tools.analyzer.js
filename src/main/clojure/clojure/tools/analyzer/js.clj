@@ -14,7 +14,7 @@
              :refer [analyze analyze-in-env]
              :rename {analyze -analyze}]
             [clojure.tools.analyzer
-             [utils :refer [resolve-var resolve-ns ctx -source-info dissoc-env]]
+             [utils :refer [resolve-var resolve-ns ctx -source-info dissoc-env const-val]]
              [ast :refer [prewalk postwalk]]
              [env :as env :refer [*env*]]]
             [clojure.tools.analyzer.passes
@@ -23,13 +23,13 @@
              [elide-meta :refer [elide-meta elides]]
              [warn-earmuff :refer [warn-earmuff]]
              [add-binding-atom :refer [add-binding-atom]]
-             [uniquify :refer [uniquify-locals]]]
+             [uniquify :refer [uniquify-locals]]
+             [constant-lifter :refer [constant-lift]]]
             [clojure.tools.analyzer.passes.js
              [annotate-tag :refer [annotate-tag]]
              [infer-tag :refer [infer-tag]]
              [validate :refer [validate]]
-             [analyze-host-expr :refer [analyze-host-expr]]
-             [constant-lifter :refer [constant-lift]]]
+             [analyze-host-expr :refer [analyze-host-expr]]]
             [clojure.tools.analyzer.js.utils
              :refer [desugar-ns-specs validate-ns-specs ns-resource source-path res-path]]
             [cljs
@@ -393,6 +393,15 @@
        {:doc docstring})
      (when metadata
        {:meta metadata}))))
+
+(defmethod parse 'def
+  [form env]
+  (let [{:keys [meta] :as ast} (ana/-parse form env)]
+    (if (and meta (= :map (:op meta)))
+      (let [const-map (zipmap (mapv const-val (:keys meta))
+                              (mapv const-val (:vals meta)))]
+        (assoc-in ast [:meta] (ana/-analyze :const const-map env)))
+      ast)))
 
 (defn ^:dynamic run-passes [ast]
   (binding [elides (update-in elides [:all] into
