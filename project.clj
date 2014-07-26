@@ -7,5 +7,6 @@
   :resource-paths ["src/main/cljs"]
   :test-paths ["src/test/clojure"]
   :dependencies [[org.clojure/clojure "1.6.0"]
-                 [org.clojure/tools.analyzer "0.3.1-SNAPSHOT"]
-                 [org.clojure/clojurescript "0.0-2268"]])
+                 [org.clojure/tools.analyzer "0.4.1-SNAPSHOT"]
+                 [org.clojure/tools.reader "0.8.5"]
+                 [org.clojure/clojurescript "0.0-2277"]])
