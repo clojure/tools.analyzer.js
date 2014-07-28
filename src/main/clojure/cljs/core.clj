@@ -1384,7 +1384,7 @@
         (core/and (every? #(= (:op %) :const)
                           (map #(clojure.tools.analyzer.js/analyze % &env) keys))
                   (= (count (into #{} keys)) (count keys))))
-      `(cljs.core/PersistentArrayMap. nil ~(core// (count kvs) 2) (array ~@kvs) nil)
+      `(cljs.core/PersistentArrayMap. nil ~(clojure.core// (count kvs) 2) (array ~@kvs) nil)
 
       :else
       `(js/cljs.core.PersistentArrayMap.fromArray (array ~@kvs) true false))))
