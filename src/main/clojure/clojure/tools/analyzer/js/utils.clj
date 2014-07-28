@@ -10,7 +10,8 @@
   (:require [clojure.string :as s]
             [clojure.tools.analyzer.utils :refer [-source-info]]
             [clojure.java.io :as io])
-  (:import java.io.File))
+  (:import java.io.File
+           java.net.URL))
 
 (defn desugar-macros [{:keys [require] :as ns-opts}]
   (let [sugar-keys #{:include-macros :refer-macros}]
@@ -84,11 +85,11 @@
   (let [f (ns->relpath ns)]
    (cond
     (instance? File f) f
-    (instance? java.net.URL f) f
-    (re-find #"^file://" f) (java.net.URL. f)
+    (instance? URL f) f
+    (re-find #"^file://" f) (URL. f)
     :else (io/resource f))))
 
 (defn res-path [res]
   (if (instance? File res)
     (.getPath ^File res)
-    (.getPath ^java.net.URL res)))
+    (.getPath ^URL res)))
