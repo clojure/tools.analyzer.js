@@ -23,8 +23,7 @@
              [elide-meta :refer [elide-meta elides]]
              [warn-earmuff :refer [warn-earmuff]]
              [add-binding-atom :refer [add-binding-atom]]
-             [uniquify :refer [uniquify-locals]]
-             [constant-lifter :refer [constant-lift]]]
+             [uniquify :refer [uniquify-locals]]]
             [clojure.tools.analyzer.passes.js
              [annotate-tag :refer [annotate-tag]]
              [infer-tag :refer [infer-tag]]
@@ -424,8 +423,7 @@
                     annotate-tag
                     analyze-host-expr
                     infer-tag
-                    validate
-                    constant-lift))))))
+                    validate))))))
 
 (defn analyze
   ([form] (analyze form (empty-env) {}))
