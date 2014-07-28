@@ -29,6 +29,7 @@
              [annotate-tag :refer [annotate-tag]]
              [infer-tag :refer [infer-tag]]
              [validate :refer [validate]]
+             [collect-keywords :refer [collect-keywords]]
              [analyze-host-expr :refer [analyze-host-expr]]]
             [clojure.tools.analyzer.js.utils
              :refer [desugar-ns-specs validate-ns-specs ns-resource source-path res-path]]
@@ -415,7 +416,8 @@
                  (-> ast
                    warn-earmuff
                    source-info
-                   elide-meta)))
+                   elide-meta
+                   collect-keywords)))
 
       (postwalk (fn [ast]
                   (-> ast
