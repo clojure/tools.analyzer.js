@@ -19,6 +19,10 @@
     </developer>
   </developers>
 
+  <properties>
+    <clojure.version>1.5.1</clojure.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.clojure</groupId>
