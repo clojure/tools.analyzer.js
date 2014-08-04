@@ -95,6 +95,10 @@
   "Returns true if x is logical false, false otherwise."
   [x] (if x false true))
 
+(defn ^boolean some?
+  "Returns true if x is not nil, false otherwise."
+  [x] (not (nil? x)))
+
 (defn ^boolean object? [x]
   (if-not (nil? x)
     (identical? (.-constructor x) js/Object)
@@ -395,9 +399,130 @@
     (-flush writer)
     (str sb)))
 
+;;;;;;;;;;;;;;;;;;; Murmur3 ;;;;;;;;;;;;;;;
+
+;;http://hg.openjdk.java.net/jdk7u/jdk7u6/jdk/file/8c2c5d63a17e/src/share/classes/java/lang/Integer.java
+(defn ^number int-rotate-left [x n]
+  (bit-or
+    (bit-shift-left x n)
+    (unsigned-bit-shift-right x (- n))))
+
+;; http://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/imul
+(if (and (exists? Math/imul)
+         (not (zero? (Math/imul 0xffffffff 5))))
+  (defn ^number imul [a b] (js/Math.imul a b))
+  (defn ^number imul [a b]
+    (let [ah (bit-and (unsigned-bit-shift-right a 16) 0xffff)
+          al (bit-and a 0xffff)
+          bh (bit-and (unsigned-bit-shift-right b 16) 0xffff)
+          bl (bit-and b 0xffff)]
+      (bit-or
+        (+ (* al bl)
+           (unsigned-bit-shift-right
+             (bit-shift-left (+ (* ah bl) (* al bh)) 16) 0)) 0))))
+
+;; http://smhasher.googlecode.com/svn/trunk/MurmurHash3.cpp
+(def m3-seed 0)
+(def m3-C1 0xcc9e2d51)
+(def m3-C2 0x1b873593)
+
+(defn ^number m3-mix-K1 [k1]
+  (-> k1 (imul m3-C1) (int-rotate-left 15) (imul m3-C2)))
+
+(defn ^number m3-mix-H1 [h1 k1]
+  (-> h1 (bit-xor k1) (int-rotate-left 13) (imul 5) (+ 0xe6546b64)))
+
+(defn ^number m3-fmix [h1 len]
+  (as-> h1 h1
+    (bit-xor h1 len)
+    (bit-xor h1 (unsigned-bit-shift-right h1 16))
+    (imul h1 0x85ebca6b)
+    (bit-xor h1 (unsigned-bit-shift-right h1 13))
+    (imul h1 0xc2b2ae35)
+    (bit-xor h1 (unsigned-bit-shift-right h1 16))))
+
+(defn ^number m3-hash-int [in]
+  (if (zero? in)
+    in
+    (let [k1 (m3-mix-K1 in)
+          h1 (m3-mix-H1 m3-seed k1)]
+      (m3-fmix h1 4))))
+
+(defn ^number m3-hash-unencoded-chars [in]
+  (let [h1 (loop [i 1 h1 m3-seed]
+             (if (< i (alength in))
+               (recur (+ i 2)
+                 (m3-mix-H1 h1
+                   (m3-mix-K1
+                     (bit-or (.charCodeAt in (dec i))
+                       (bit-shift-left (.charCodeAt in i) 16)))))
+               h1))
+        h1 (if (== (bit-and (alength in) 1) 1)
+             (bit-xor h1 (m3-mix-K1 (.charCodeAt in (dec (alength in)))))
+             h1)]
+    (m3-fmix h1 (imul 2 (alength in)))))
+
 ;;;;;;;;;;;;;;;;;;; symbols ;;;;;;;;;;;;;;;
 
-(declare list hash-combine hash Symbol = compare)
+(declare list Symbol = compare)
+
+;; Simple caching of string hashcode
+(def string-hash-cache (js-obj))
+(def string-hash-cache-count 0)
+
+;;http://hg.openjdk.java.net/jdk7u/jdk7u6/jdk/file/8c2c5d63a17e/src/share/classes/java/lang/String.java
+(defn hash-string* [s]
+  (if-not (nil? s)
+    (let [len (alength s)]
+      (if (pos? len)
+        (loop [i 0 hash 0]
+          (if (< i len)
+            (recur (inc i) (+ (imul 31 hash) (.charCodeAt s i)))
+            hash))
+        0))
+    0))
+
+(defn add-to-string-hash-cache [k]
+  (let [h (hash-string* k)]
+    (aset string-hash-cache k h)
+    (set! string-hash-cache-count (inc string-hash-cache-count))
+    h))
+
+(defn hash-string [k]
+  (when (> string-hash-cache-count 255)
+    (set! string-hash-cache (js-obj))
+    (set! string-hash-cache-count 0))
+  (let [h (aget string-hash-cache k)]
+    (if (number? h)
+      h
+      (add-to-string-hash-cache k))))
+
+(defn hash [o]
+  (cond
+    (implements? IHash o)
+    (-hash ^not-native o)
+
+    (number? o)
+    (js-mod (.floor js/Math o) 2147483647)
+
+    (true? o) 1
+
+    (false? o) 0
+
+    (string? o)
+    (m3-hash-int (hash-string o))
+
+    (nil? o) 0
+
+    :else
+    (-hash o)))
+
+(defn hash-combine [seed hash]
+  ; a la boost
+  (bit-xor seed
+    (+ hash 0x9e3779b9
+      (bit-shift-left seed 6)
+      (bit-shift-right seed 2))))
 
 (defn ^boolean instance? [t o]
   (cljs.core/instance? t o))
@@ -406,7 +531,9 @@
   (instance? Symbol x))
 
 (defn- hash-symbol [sym]
-  (hash-combine (hash (.-ns sym)) (hash (.-name sym))))
+  (hash-combine
+    (m3-hash-unencoded-chars (.-name sym))
+    (hash-string (.-ns sym))))
 
 (defn- compare-symbols [a b]
   (cond
@@ -423,26 +550,34 @@
 (deftype Symbol [ns name str ^:mutable _hash _meta]
   Object
   (toString [_] str)
+  (equiv [this other] (-equiv this other))
+
   IEquiv
   (-equiv [_ other]
     (if (instance? Symbol other)
       (identical? str (.-str other))
       false))
+
   IFn
   (-invoke [sym coll]
     (-lookup coll sym nil))
   (-invoke [sym coll not-found]
     (-lookup coll sym not-found))
+
   IMeta
   (-meta [_] _meta)
+
   IWithMeta
   (-with-meta [_ new-meta] (Symbol. ns name str _hash new-meta))
+
   IHash
   (-hash [sym]
     (caching-hash sym hash-symbol _hash))
+
   INamed
   (-name [_] name)
   (-namespace [_] ns)
+
   IPrintWithWriter
   (-pr-writer [o writer _] (-write writer str)))
 
@@ -540,6 +675,43 @@
          (recur y (first more) (next more))
          (= y (first more)))
        false)))
+
+;;;;;;;;;;;;;;;;;;; Murmur3 Helpers ;;;;;;;;;;;;;;;;
+
+(defn ^number mix-collection-hash
+  "Mix final collection hash for ordered or unordered collections.
+   hash-basis is the combined collection hash, count is the number
+   of elements included in the basis. Note this is the hash code
+   consistent with =, different from .hashCode.
+   See http://clojure.org/data_structures#hash for full algorithms."
+  [hash-basis count]
+  (let [h1 m3-seed
+        k1 (m3-mix-K1 hash-basis)
+        h1 (m3-mix-H1 h1 k1)]
+    (m3-fmix h1 count)))
+
+(defn ^number hash-ordered-coll
+  "Returns the hash code, consistent with =, for an external ordered
+   collection implementing Iterable.
+   See http://clojure.org/data_structures#hash for full algorithms."
+  [coll]
+  (loop [n 0 hash-code 1 coll (seq coll)]
+    (if-not (nil? coll)
+      (recur (inc n) (bit-or (+ (imul 31 hash-code) (hash (first coll))) 0)
+        (next coll))
+      (mix-collection-hash hash-code n))))
+
+(defn ^number hash-unordered-coll
+  "Returns the hash code, consistent with =, for an external unordered
+   collection implementing Iterable. For maps, the iterator should
+   return map entries whose hash is computed as
+     (hash-ordered-coll [k v]).
+   See http://clojure.org/data_structures#hash for full algorithms."
+  [coll]
+  (loop [n 0 hash-code 0 coll (seq coll)]
+    (if-not (nil? coll)
+      (recur (inc n) (bit-or (+ hash-code (hash (first coll))) 0) (next coll))
+      (mix-collection-hash hash-code n))))
 
 ;;;;;;;;;;;;;;;;;;; protocols on primitives ;;;;;;;;
 (declare hash-map list equiv-sequential)
@@ -673,6 +845,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
    (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
 
   ICloneable
   (-clone [_] (IndexedSeq. arr i))
@@ -723,7 +897,7 @@ reduces them without incurring seq initialization"
     (array-reduce arr f start i))
 
   IHash
-  (-hash [coll] (hash-coll coll))
+  (-hash [coll] (hash-ordered-coll coll))
 
   IReversible
   (-rseq [coll]
@@ -750,6 +924,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
 
   ICloneable
   (-clone [_] (RSeq. ci i meta))
@@ -774,7 +950,7 @@ reduces them without incurring seq initialization"
     (if (pos? i)
       (RSeq. ci (dec i) nil)
       ()))
-
+  
   INext
   (-next [coll]
     (when (pos? i)
@@ -791,7 +967,7 @@ reduces them without incurring seq initialization"
   (-empty [coll] (with-meta js/cljs.core.List.EMPTY meta))
 
   IHash
-  (-hash [coll] (hash-coll coll))
+  (-hash [coll] (hash-ordered-coll coll))
 
   IReduce
   (-reduce [col f] (seq-reduce f col))
@@ -870,7 +1046,7 @@ reduces them without incurring seq initialization"
 
       (array? coll)
       (alength coll)
-
+    
       (string? coll)
       (alength coll)
 
@@ -975,14 +1151,14 @@ reduces them without incurring seq initialization"
         (array? o)
         (when (< k (.-length o))
           (aget o k))
-
+        
         (string? o)
         (when (< k (.-length o))
           (aget o k))
 
         (native-satisfies? ILookup o)
         (-lookup o k)
-
+        
         :else nil)))
   ([o k not-found]
     (if-not (nil? o)
@@ -994,7 +1170,7 @@ reduces them without incurring seq initialization"
         (if (< k (.-length o))
           (aget o k)
           not-found)
-
+        
         (string? o)
         (if (< k (.-length o))
           (aget o k)
@@ -1046,6 +1222,8 @@ reduces them without incurring seq initialization"
     (MetaFn. afn new-meta))
   Fn
   IFn
+  (-invoke [_]
+    (afn))
   (-invoke [_ a]
     (afn a))
   (-invoke [_ a b]
@@ -1133,45 +1311,6 @@ reduces them without incurring seq initialization"
         (if ks
           (recur ret (first ks) (next ks))
           ret)))))
-
-;; Simple caching of string hashcode
-(def string-hash-cache (js-obj))
-(def string-hash-cache-count 0)
-
-(defn add-to-string-hash-cache [k]
-  (let [h (goog.string/hashCode k)]
-    (aset string-hash-cache k h)
-    (set! string-hash-cache-count (inc string-hash-cache-count))
-    h))
-
-(defn check-string-hash-cache [k]
-  (when (> string-hash-cache-count 255)
-    (set! string-hash-cache (js-obj))
-    (set! string-hash-cache-count 0))
-  (let [h (aget string-hash-cache k)]
-    (if (number? h)
-      h
-      (add-to-string-hash-cache k))))
-
-(defn hash [o]
-  (cond
-    (implements? IHash o)
-    (-hash ^not-native o)
-
-    (number? o)
-    (js-mod (.floor js/Math o) 2147483647)
-
-    (true? o) 1
-
-    (false? o) 0
-
-    (string? o)
-    (check-string-hash-cache o)
-
-    (nil? o) 0
-
-    :else
-    (-hash o)))
 
 (defn ^boolean empty?
   "Returns true if coll has no items - same as (not (seq coll)).
@@ -1462,7 +1601,7 @@ reduces them without incurring seq initialization"
 
        (string? coll)
        (array-reduce coll f)
-
+       
        (native-satisfies? IReduce coll)
        (-reduce coll f)
 
@@ -1475,10 +1614,10 @@ reduces them without incurring seq initialization"
 
        (array? coll)
        (array-reduce coll f val)
-
+      
        (string? coll)
        (array-reduce coll f val)
-
+       
        (native-satisfies? IReduce coll)
        (-reduce coll f val)
 
@@ -1675,19 +1814,19 @@ reduces them without incurring seq initialization"
 (defn unchecked-remainder-int [x n]
   (cljs.core/unchecked-remainder-int x n))
 
-(defn ^number unchecked-substract
+(defn ^number unchecked-subtract
   "If no ys are supplied, returns the negation of x, else subtracts
   the ys from x and returns the result."
   ([x] (cljs.core/unchecked-subtract x))
   ([x y] (cljs.core/unchecked-subtract x y))
-  ([x y & more] (reduce unchecked-substract (cljs.core/unchecked-subtract x y) more)))
+  ([x y & more] (reduce unchecked-subtract (cljs.core/unchecked-subtract x y) more)))
 
-(defn ^number unchecked-substract-int
+(defn ^number unchecked-subtract-int
   "If no ys are supplied, returns the negation of x, else subtracts
   the ys from x and returns the result."
   ([x] (cljs.core/unchecked-subtract-int x))
   ([x y] (cljs.core/unchecked-subtract-int x y))
-  ([x y & more] (reduce unchecked-substract-int (cljs.core/unchecked-subtract-int x y) more)))
+  ([x y & more] (reduce unchecked-subtract-int (cljs.core/unchecked-subtract-int x y) more)))
 
 (defn- ^number fix [q]
   (if (>= q 0)
@@ -1887,12 +2026,6 @@ reduces them without incurring seq initialization"
              (= (first xs) (first ys)) (recur (next xs) (next ys))
              :else false)))))
 
-(defn hash-combine [seed hash]
-  ; a la boost
-  (bit-xor seed (+ hash 0x9e3779b9
-                   (bit-shift-left seed 6)
-                   (bit-shift-right seed 2))))
-
 (defn- hash-coll [coll]
   (if (seq coll)
     (loop [res (hash (first coll)) s (next coll)]
@@ -1940,6 +2073,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
 
   IList
 
@@ -1981,7 +2116,7 @@ reduces them without incurring seq initialization"
   (-equiv [coll other] (equiv-sequential coll other))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-coll __hash))
+  (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
 
   ISeqable
   (-seq [coll] coll)
@@ -1997,6 +2132,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
 
   IList
 
@@ -2077,6 +2214,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
 
   IList
 
@@ -2109,11 +2248,11 @@ reduces them without incurring seq initialization"
   (-equiv [coll other] (equiv-sequential coll other))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-coll __hash))
+  (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
 
   ISeqable
   (-seq [coll] coll)
-
+  
   IReduce
   (-reduce [coll f] (seq-reduce f coll))
   (-reduce [coll f start] (seq-reduce f start coll)))
@@ -2129,10 +2268,15 @@ reduces them without incurring seq initialization"
 (defn ^boolean list? [x]
   (satisfies? IList x))
 
+(defn hash-keyword [k]
+  (int (+ (hash-symbol k) 0x9e3779b9)))
+
 (deftype Keyword [ns name fqn ^:mutable _hash]
   Object
   (toString [_] (str ":" fqn))
-
+  (equiv [this other]
+    (-equiv this other))
+  
   IEquiv
   (-equiv [_ other]
     (if (instance? Keyword other)
@@ -2145,14 +2289,8 @@ reduces them without incurring seq initialization"
     (get coll kw not-found))
 
   IHash
-  (-hash [_]
-    ; This was checking if _hash == -1, should it stay that way?
-    (if (nil? _hash)
-      (do
-        (set! _hash (+ (hash-combine (hash ns) (hash name))
-                        0x9e3779b9))
-        _hash)
-      _hash))
+  (-hash [this]
+    (caching-hash this hash-keyword _hash))
 
   INamed
   (-name [_] name)
@@ -2198,7 +2336,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
-
+  (equiv [this other]
+    (-equiv this other))
   (sval [coll]
     (if (nil? fn)
       s
@@ -2241,7 +2380,7 @@ reduces them without incurring seq initialization"
   (-equiv [coll other] (equiv-sequential coll other))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-coll __hash))
+  (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
 
   ISeqable
   (-seq [coll]
@@ -2312,7 +2451,9 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
-
+  (equiv [this other]
+    (-equiv this other))
+  
   IWithMeta
   (-with-meta [coll m]
     (ChunkedCons. chunk more m __hash))
@@ -2366,7 +2507,7 @@ reduces them without incurring seq initialization"
   (-empty [coll] (with-meta js/cljs.core.List.EMPTY meta))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-coll __hash)))
+  (-hash [coll] (caching-hash coll hash-ordered-coll __hash)))
 
 (defn chunk-cons [chunk rest]
   (if (zero? (-count chunk))
@@ -3374,6 +3515,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
 
   ICloneable
   (-clone [_] (PersistentVector. meta cnt shift root tail __hash))
@@ -3429,7 +3572,7 @@ reduces them without incurring seq initialization"
   (-equiv [coll other] (equiv-sequential coll other))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-coll __hash))
+  (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
 
   ISeqable
   (-seq [coll]
@@ -3556,6 +3699,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
 
   IWithMeta
   (-with-meta [coll m]
@@ -3614,7 +3759,7 @@ reduces them without incurring seq initialization"
         (chunked-seq vec (unchecked-array-for vec end) end 0))))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-coll __hash))
+  (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
 
   IReduce
   (-reduce [coll f]
@@ -3635,6 +3780,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
 
   ICloneable
   (-clone [_] (Subvec. meta v start end __hash))
@@ -3665,7 +3812,7 @@ reduces them without incurring seq initialization"
   (-equiv [coll other] (equiv-sequential coll other))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-coll __hash))
+  (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
 
   ISeqable
   (-seq [coll]
@@ -3937,6 +4084,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
 
   IWithMeta
   (-with-meta [coll meta] (PersistentQueueSeq. meta front rear __hash))
@@ -3964,7 +4113,7 @@ reduces them without incurring seq initialization"
   (-equiv [coll other] (equiv-sequential coll other))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-coll __hash))
+  (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
 
   ISeqable
   (-seq [coll] coll))
@@ -3973,6 +4122,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
 
   ICloneable
   (-clone [coll] (PersistentQueue. meta count front rear __hash))
@@ -4010,7 +4161,7 @@ reduces them without incurring seq initialization"
   (-equiv [coll other] (equiv-sequential coll other))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-coll __hash))
+  (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
 
   ISeqable
   (-seq [coll]
@@ -4024,6 +4175,9 @@ reduces them without incurring seq initialization"
 (set! js/cljs.core.PersistentQueue.EMPTY (PersistentQueue. nil 0 nil [] 0))
 
 (deftype NeverEquiv []
+  Object
+  (equiv [this other]
+    (-equiv this other))
   IEquiv
   (-equiv [o other] false))
 
@@ -4093,6 +4247,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
 
   IWithMeta
   (-with-meta [coll meta] (ObjMap. meta keys strobj update-count __hash))
@@ -4115,7 +4271,7 @@ reduces them without incurring seq initialization"
   (-equiv [coll other] (equiv-map coll other))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-imap __hash))
+  (-hash [coll] (caching-hash coll hash-unordered-coll __hash))
 
   ISeqable
   (-seq [coll]
@@ -4195,6 +4351,45 @@ reduces them without incurring seq initialization"
 
 (set! js/cljs.core.ObjMap.HASHMAP_THRESHOLD 8)
 
+
+;; EXPERIMENTAL: subject to change
+(deftype Iterator [^:mutable s]
+  Object
+  (next [_]
+    (if-not (nil? s)
+      (let [x (first s)]
+        (set! s (next s))
+        #js {:value x :done false})
+      #js {:value nil :done true})))
+
+(defn iterator [coll]
+  (Iterator. (seq coll)))
+
+;; EXPERIMENTAL: subject to change
+(deftype EntriesIterator [^:mutable s]
+  Object
+  (next [_]
+    (if-not (nil? s)
+      (let [[k v] (first s)]
+        (set! s (next s))
+        #js {:value #js [k v] :done false})
+      #js {:value nil :done true})))
+
+(defn entries-iterator [coll]
+  (EntriesIterator. (seq coll)))
+
+;; EXPERIMENTAL: subject to change
+(deftype SetEntriesIterator [^:mutable s]
+  Object
+  (next [_]
+    (if-not (nil? s)
+      (let [x (first s)]
+        (set! s (next s))
+        #js {:value #js [x x] :done false})
+      #js {:value nil :done true})))
+
+(defn set-entries-iterator [coll]
+  (SetEntriesIterator. (seq coll)))
 (set! js/cljs.core.ObjMap.fromObject (fn [ks obj] (ObjMap. nil ks obj 0 nil)))
 
 ;;; PersistentArrayMap
@@ -4278,7 +4473,9 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
-
+  (equiv [this other]
+    (-equiv this other))
+  
   IMeta
   (-meta [coll] _meta)
 
@@ -4305,8 +4502,8 @@ reduces them without incurring seq initialization"
   (-empty [coll] (with-meta js/cljs.core.List.EMPTY _meta))
 
   IHash
-  (-hash [coll] (hash-coll coll))
-
+  (-hash [coll] (hash-ordered-coll coll))
+  
   ISeq
   (-first [coll]
     [(aget arr i) (aget arr (inc i))])
@@ -4329,10 +4526,29 @@ reduces them without incurring seq initialization"
   (when (<= i (- (alength arr) 2))
     (PersistentArrayMapSeq. arr i _meta)))
 
+(declare keys vals)
+
 (deftype PersistentArrayMap [meta cnt arr ^:mutable __hash]
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
+
+  ;; EXPERIMENTAL: subject to change
+  (keys [coll]
+    (iterator (keys coll)))
+  (entries [coll]
+    (entries-iterator (seq coll)))
+  (values [coll]
+    (iterator (vals coll)))
+  (has [coll k]
+    (contains? coll k))
+  (get [coll k]
+    (-lookup coll k))
+  (forEach [coll f]
+    (doseq [[k v] coll]
+      (f v k)))
 
   ICloneable
   (-clone [_] (PersistentArrayMap. meta cnt arr __hash))
@@ -4363,7 +4579,7 @@ reduces them without incurring seq initialization"
   (-equiv [coll other] (equiv-map coll other))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-imap __hash))
+  (-hash [coll] (caching-hash coll hash-unordered-coll __hash))
 
   ISeqable
   (-seq [coll]
@@ -4433,13 +4649,13 @@ reduces them without incurring seq initialization"
               @init
               (recur (+ i 2) init)))
           init))))
-
+  
   IReduce
   (-reduce [coll f]
     (seq-reduce f coll))
   (-reduce [coll f start]
     (seq-reduce f start coll))
-
+  
   IFn
   (-invoke [coll k]
     (-lookup coll k))
@@ -4457,7 +4673,7 @@ reduces them without incurring seq initialization"
 
 (set! js/cljs.core.PersistentArrayMap.fromArray
   (fn [arr ^boolean no-clone ^boolean no-check]
-    (let [arr (if no-clone arr (aclone arr))]
+    (let [arr (if no-clone arr (aclone arr))] 
       (if no-check
         (let [cnt (/ (alength arr) 2)]
           (PersistentArrayMap. nil cnt arr nil))
@@ -5050,6 +5266,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
 
   IMeta
   (-meta [coll] meta)
@@ -5088,7 +5306,7 @@ reduces them without incurring seq initialization"
   (-equiv [coll other] (equiv-sequential coll other))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-coll __hash))
+  (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
 
   IReduce
   (-reduce [coll f] (seq-reduce f coll))
@@ -5115,6 +5333,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
 
   IMeta
   (-meta [coll] meta)
@@ -5146,7 +5366,7 @@ reduces them without incurring seq initialization"
   (-equiv [coll other] (equiv-sequential coll other))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-coll __hash))
+  (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
 
   IReduce
   (-reduce [coll f] (seq-reduce f coll))
@@ -5172,6 +5392,23 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
+
+  ;; EXPERIMENTAL: subject to change
+  (keys [coll]
+    (iterator (keys coll)))
+  (entries [coll]
+    (entries-iterator (seq coll)))
+  (values [coll]
+    (iterator (vals coll)))
+  (has [coll k]
+    (contains? coll k))
+  (get [coll k]
+    (-lookup coll k))
+  (forEach [coll f]
+    (doseq [[k v] coll]
+      (f v k)))
 
   ICloneable
   (-clone [_] (PersistentHashMap. meta cnt root has-nil? nil-val __hash))
@@ -5202,7 +5439,7 @@ reduces them without incurring seq initialization"
   (-equiv [coll other] (equiv-map coll other))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-imap __hash))
+  (-hash [coll] (caching-hash coll hash-unordered-coll __hash))
 
   ISeqable
   (-seq [coll]
@@ -5404,6 +5641,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
 
   ISeqable
   (-seq [this] this)
@@ -5436,7 +5675,7 @@ reduces them without incurring seq initialization"
   (-empty [coll] (with-meta js/cljs.core.List.EMPTY meta))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-coll __hash))
+  (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
 
   IMeta
   (-meta [coll] meta)
@@ -5590,7 +5829,7 @@ reduces them without incurring seq initialization"
   (-val [node] val)
 
   IHash
-  (-hash [coll] (caching-hash coll hash-coll __hash))
+  (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
 
   IEquiv
   (-equiv [coll other] (equiv-sequential coll other))
@@ -5731,7 +5970,7 @@ reduces them without incurring seq initialization"
   (-val [node] val)
 
   IHash
-  (-hash [coll] (caching-hash coll hash-coll __hash))
+  (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
 
   IEquiv
   (-equiv [coll other] (equiv-sequential coll other))
@@ -5909,6 +6148,23 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
+
+  ;; EXPERIMENTAL: subject to change
+  (keys [coll]
+    (iterator (keys coll)))
+  (entries [coll]
+    (entries-iterator (seq coll)))
+  (values [coll]
+    (iterator (vals coll)))
+  (has [coll k]
+    (contains? coll k))
+  (get [coll k]
+    (-lookup coll k))
+  (forEach [coll f]
+    (doseq [[k v] coll]
+      (f v k)))
 
   (entry-at [coll k]
     (loop [t tree]
@@ -5947,7 +6203,7 @@ reduces them without incurring seq initialization"
   (-equiv [coll other] (equiv-map coll other))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-imap __hash))
+  (-hash [coll] (caching-hash coll hash-unordered-coll __hash))
 
   ICounted
   (-count [coll] cnt)
@@ -6087,6 +6343,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
 
   IMeta
   (-meta [coll] _meta)
@@ -6109,8 +6367,8 @@ reduces them without incurring seq initialization"
   (-empty [coll] (with-meta js/cljs.core.List.EMPTY _meta))
 
   IHash
-  (-hash [coll] (hash-coll coll))
-
+  (-hash [coll] (hash-ordered-coll coll))
+  
   ISeq
   (-first [coll]
     (let [^not-native me (-first mseq)]
@@ -6151,6 +6409,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
 
   IMeta
   (-meta [coll] _meta)
@@ -6173,7 +6433,7 @@ reduces them without incurring seq initialization"
   (-empty [coll] (with-meta js/cljs.core.List.EMPTY _meta))
 
   IHash
-  (-hash [coll] (hash-coll coll))
+  (-hash [coll] (hash-ordered-coll coll))
 
   ISeq
   (-first [coll]
@@ -6257,6 +6517,21 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
+
+  ;; EXPERIMENTAL: subject to change
+  (keys [coll]
+    (iterator (seq coll)))
+  (entries [coll]
+    (set-entries-iterator (seq coll)))
+  (values [coll]
+    (iterator (seq coll)))
+  (has [coll k]
+    (contains? coll k))
+  (forEach [coll f]
+    (doseq [[k v] coll]
+      (f v k)))
 
   ICloneable
   (-clone [_] (PersistentHashSet. meta hash-map __hash))
@@ -6283,7 +6558,7 @@ reduces them without incurring seq initialization"
              other)))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-iset __hash))
+  (-hash [coll] (caching-hash coll hash-unordered-coll __hash))
 
   ISeqable
   (-seq [coll] (keys hash-map))
@@ -6372,6 +6647,21 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
+
+  ;; EXPERIMENTAL: subject to change
+  (keys [coll]
+    (iterator (seq coll)))
+  (entries [coll]
+    (set-entries-iterator (seq coll)))
+  (values [coll]
+    (iterator (seq coll)))
+  (has [coll k]
+    (contains? coll k))
+  (forEach [coll f]
+    (doseq [[k v] coll]
+      (f v k)))
 
   ICloneable
   (-clone [_] (PersistentTreeSet. meta tree-map __hash))
@@ -6398,7 +6688,7 @@ reduces them without incurring seq initialization"
              other)))
 
   IHash
-  (-hash [coll] (caching-hash coll hash-iset __hash))
+  (-hash [coll] (caching-hash coll hash-unordered-coll __hash))
 
   ISeqable
   (-seq [coll] (keys tree-map))
@@ -6611,6 +6901,8 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
 
   ICloneable
   (-clone [_] (Range. meta start end step __hash))
@@ -6656,7 +6948,7 @@ reduces them without incurring seq initialization"
   (-equiv [rng other] (equiv-sequential rng other))
 
   IHash
-  (-hash [rng] (caching-hash rng hash-coll __hash))
+  (-hash [rng] (caching-hash rng hash-ordered-coll __hash))
 
   ICounted
   (-count [rng]
@@ -6808,11 +7100,14 @@ reduces them without incurring seq initialization"
 (defn re-matches
   "Returns the result of (re-find re s) if re fully matches s."
   [re s]
-  (let [matches (.exec re s)]
-    (when (= (first matches) s)
-      (if (== (count matches) 1)
-        (first matches)
-        (vec matches)))))
+  (if (string? s)
+    (let [matches (.exec re s)]
+      (when (= (first matches) s)
+        (if (== (count matches) 1)
+          (first matches)
+          (vec matches))))
+    (throw (js/TypeError. "re-matches must match against a string."))))
+
 
 (defn re-find
   "Returns the first regex match, if any, of s to re, using
@@ -6820,11 +7115,13 @@ reduces them without incurring seq initialization"
   substring, then any capturing groups if the regular expression contains
   capturing groups."
   [re s]
-  (let [matches (.exec re s)]
-    (when-not (nil? matches)
-      (if (== (count matches) 1)
-        (first matches)
-        (vec matches)))))
+  (if (string? s)
+    (let [matches (.exec re s)]
+      (when-not (nil? matches)
+        (if (== (count matches) 1)
+          (first matches)
+          (vec matches))))
+    (throw (js/TypeError. "re-find must match against a string."))))
 
 (defn re-seq
   "Returns a lazy sequence of successive matches of re in s."
@@ -6913,11 +7210,11 @@ reduces them without incurring seq initialization"
               ;; handle CLJS ctors
               ^boolean (.-cljs$lang$type obj)
               (.cljs$lang$ctorPrWriter obj obj writer opts)
-
+              
               ; Use the new, more efficient, IPrintWithWriter interface when possible.
               (implements? IPrintWithWriter obj)
               (-pr-writer ^not-native obj writer opts)
-
+              
               (or (identical? (type obj) js/Boolean) (number? obj))
               (-write writer (str obj))
 
@@ -7161,7 +7458,7 @@ reduces them without incurring seq initialization"
 
   Subvec
   (-compare [x y] (compare-indexed x y))
-
+  
   PersistentVector
   (-compare [x y] (compare-indexed x y)))
 
@@ -7176,8 +7473,12 @@ reduces them without incurring seq initialization"
   (-swap! [o f] [o f a] [o f a b] [o f a b xs]))
 
 (deftype Atom [state meta validator watches]
-  IAtom
+  Object
+  (equiv [this other]
+    (-equiv this other))
 
+  IAtom
+  
   IEquiv
   (-equiv [o other] (identical? o other))
 
@@ -7356,17 +7657,17 @@ reduces them without incurring seq initialization"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Delay ;;;;;;;;;;;;;;;;;;;;
 
-(deftype Delay [state f]
+(deftype Delay [^:mutable f ^:mutable value]
   IDeref
   (-deref [_]
-    (:value (swap! state (fn [{:keys [done] :as curr-state}]
-                           (if done
-                             curr-state,
-                             {:done true :value (f)})))))
+    (when f
+      (set! value (f))
+      (set! f nil))
+    value)
 
   IPending
   (-realized? [d]
-    (:done @state)))
+    (not f)))
 
 (defn ^boolean delay?
   "returns true if x is a Delay created with delay"
@@ -7449,7 +7750,7 @@ Maps become Objects. Arbitrary keys are encoded to by key->js."
 
                   (array? x)
                   (vec (map thisfn x))
-
+                   
                   (identical? (type x) js/Object)
                   (into {} (for [k (js-keys x)]
                              [(keyfn k) (thisfn (aget x k))]))
@@ -7823,7 +8124,7 @@ Maps become Objects. Arbitrary keys are encoded to by key->js."
       (when-not target-fn
         (throw-no-method-error name dispatch-val))
       (apply target-fn a b c d e f g h i j k l m n o p q r s t rest)))
-
+    
   IMultiFn
   (-reset [mf]
     (swap! method-table (fn [mf] {}))
@@ -7903,6 +8204,8 @@ Maps become Objects. Arbitrary keys are encoded to by key->js."
 (deftype UUID [uuid]
   Object
   (toString [_] uuid)
+  (equiv [this other]
+    (-equiv this other))
 
   IEquiv
   (-equiv [_ other]
