@@ -92,27 +92,52 @@
     (when (:macro (meta var))
       var)))
 
+(defn resolve-sym [sym env]
+  (or (resolve-var sym env)
+      (get-in env [:locals sym])))
+
+(defn desugar-symbol [form env]
+  (let [ns (namespace form)
+        n (name form)]
+    (cond
+
+     ;; js/foo -> (js* "foo")
+     (= "js" ns)
+     (list 'js* (name form))
+
+     ;; js-ns/foo -> (. js/js-ns -foo)
+     (and ns (get-in (env/deref-env)
+                     [:namespaces (resolve-ns (symbol ns) env) :js-namespace]))
+     (let [target (symbol "js" (str (resolve-ns (symbol ns) env)))
+           op (symbol (name form))]
+       (list '. target (symbol (str "-" (name form)))))
+
+     ;; js-var (. js/js-ns -var)
+     (and (not ns)
+          (not (get-in env [:locals form]))
+          (= :js-var (:op (resolve-var form env))))
+     (let [{:keys [namespace name]} (resolve-var form env)]
+       (list '. (symbol "js" (str namespace)) (symbol (str "-" name))))
+
+     ;; var.foo -> (. var -foo)
+     (let [idx (.indexOf n ".")
+           sym (and (pos? idx)
+                    (symbol ns (.substring n 0 idx)))]
+       (and (not= idx -1)
+            (not (resolve-sym form env))
+            (not= sym form)
+            (resolve-sym sym env)))
+     (let [idx (.indexOf n ".")
+           sym (symbol ns (.substring n 0 idx))]
+       (list '. sym (symbol (str "-" (.substring n (inc idx) (count n))))))
+
+     :else form)))
+
 (defn desugar-host-expr [form env]
   (-> (cond
+
       (symbol? form)
-      (let [ns (namespace form)]
-        (cond
-         (= "js" ns)
-         (list 'js* (name form))
-
-         (and ns (get-in (env/deref-env)
-                         [:namespaces (resolve-ns (symbol ns) env) :js-namespace]))
-         (let [target (symbol "js" (str (resolve-ns (symbol ns) env)))
-               op (symbol (name form))]
-           (list '. target (symbol (str "-" (name form)))))
-
-         (and (not ns)
-              (not (get-in env [:locals form]))
-              (= :js-var (:op (resolve-var form env))))
-         (let [{:keys [namespace name]} (resolve-var form env)]
-           (list '. (symbol "js" (str namespace)) (symbol (str "-" name))))
-
-         :else form))
+      (desugar-symbol form env)
 
       (and (seq? form)
            (symbol? (first form)))
@@ -122,29 +147,46 @@
             op-s   (str op)]
         (cond
 
+         ;; (.foo bar ..) -> (. bar foo ..)
          (= (first opname) \.)
          (let [[target & args] expr
                args (list* (symbol (subs opname 1)) args)]
            (list '. target (if (= 1 (count args))
                              (first args) args)))
 
+         ;; (foo. ..) -> (new foo ..)
          (= (last opname) \.)
          (list* 'new (symbol (subs op-s 0 (dec (count op-s)))) expr)
 
-         (= "js" opns) ;; (js/foo ..) -> ((js* "foo") ..)
+         ;; (js/foo ..) -> ((js* "foo") ..)
+         (= "js" opns)
          (list* (list 'js* opname) expr)
 
+         ;; (js-ns/foo ..) -> (. js/js-ns foo ..)
          (and opns (get-in (env/deref-env)
                            [:namespaces (resolve-ns (symbol opns) env) :js-namespace]))
          (let [target (symbol "js" (str (resolve-ns (symbol opns) env)))
                op (symbol opname)]
            (list '. target (list* op expr)))
 
+         ;; (js-var ..) -> (. js/js-ns var ..)
          (and (not opns)
               (not (get-in env [:locals op]))
               (= :js-var (:op (resolve-var op env))))
          (let [{:keys [namespace name]} (resolve-var op env)]
            (list '. (symbol "js" (str namespace)) (list* name expr)))
+
+         ;; (var.foo ..) -> (. var foo ..)
+         (let [idx (.indexOf opname ".")
+               sym (and (pos? idx)
+                        (symbol opns (.substring opname 0 idx)))]
+           (and (not= idx -1)
+                (not (resolve-sym form env))
+                (not= sym form)
+                (resolve-sym sym env)))
+         (let [idx (.indexOf opname ".")
+               sym (symbol opns (.substring opname 0 idx))]
+           (list '. sym (list* (symbol (.substring opname (inc idx) (count opname))) expr)))
 
          :else form))
       :else form)
