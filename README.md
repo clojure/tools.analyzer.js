@@ -5,7 +5,7 @@ Provides js-specific passes for tools.analyzer
 Releases and Dependency Information
 ========================================
 
-Latest stable release: 0.1.0-alpha1
+Latest stable release: 0.1.0-alpha2
 
 * [All Released Versions](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.clojure%22%20AND%20a%3A%22tools.analyzer.js%22)
 
@@ -14,7 +14,7 @@ Latest stable release: 0.1.0-alpha1
 [Leiningen](https://github.com/technomancy/leiningen) dependency information:
 
 ```clojure
-[org.clojure/tools.analyzer.js "0.1.0-alpha1"]
+[org.clojure/tools.analyzer.js "0.1.0-alpha2"]
 ```
 [Maven](http://maven.apache.org/) dependency information:
 
@@ -22,7 +22,7 @@ Latest stable release: 0.1.0-alpha1
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>tools.analyzer.js</artifactId>
-  <version>0.1.0-alpha1</version>
+  <version>0.1.0-alpha2</version>
 </dependency>
 ```
 
