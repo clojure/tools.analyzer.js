@@ -14,7 +14,6 @@
 
   <properties>
     <clojure.version>1.5.1</clojure.version>
-    <cljs.source.dir>src/main/cljs</cljs.source.dir>
   </properties>
 
   <build>
@@ -42,38 +41,7 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-	    <!-- Add Clojure sources to the project's source directories -->
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <version>1.5</version>
-        <executions>
-          <execution>
-            <id>add-clojure-source-dirs</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>add-source</goal>
-              <goal>add-resource</goal>
-            </goals>
-            <configuration>
-              <sources>
-		        <source>${clojure.source.dir}</source>
-		        <source>${cljs.source.dir}</source>
-              </sources>
-              <resources>
-		        <resource>
-		          <directory>${clojure.source.dir}</directory>
-		        </resource>
-                <resource>
-                  <directory>${cljs.source.dir}</directory>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
-
   </build>
 
   <developers>
@@ -97,7 +65,7 @@
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojurescript</artifactId>
-      <version>0.0-2277</version>
+      <version>0.0-2301</version>
     </dependency>
   </dependencies>
 
