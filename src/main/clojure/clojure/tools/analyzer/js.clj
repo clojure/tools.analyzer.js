@@ -520,9 +520,26 @@
                       (recur))))))))
         (get-in @*env* [::analyzed-cljs path])))))
 
+(defn backup-env []
+  (with-redefs [clojure.core/pr-on (fn [x w] (if (clojure.core/var? x)
+                                              (print-dup x w)
+                                              (print-method x w))
+                                     nil)]
+    (binding [*print-level* nil
+              *print-length* nil
+              *print-meta* true]
+      (let [s (pr-str (:namespaces @(global-env)))]
+        (spit (io/resource "cljs-env.res") s)))))
+
+(defn restore-env []
+  (reset! core-env
+          (read-string (slurp (io/resource "cljs-env.res"))))
+  nil)
+
 (defn setup-rt []
-  (when-not (seq @core-env)
-    (require 'cljs.core)
+  (require 'cljs.core)
+  (when-not (or (seq @core-env)
+                (seq (restore-env)))
     (env/with-env (global-env)
       (analyze-ns 'cljs.core)
       (analyze '(ns cljs.user))
