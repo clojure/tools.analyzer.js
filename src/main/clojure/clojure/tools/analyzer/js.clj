@@ -534,7 +534,7 @@
 
 (defn restore-env []
   (reset! core-env
-          (read-string (slurp (io/resource "cljs-env.res"))))
+          (reader/read-string (slurp (io/resource "cljs-env.res"))))
   nil)
 
 (defn setup-rt []
