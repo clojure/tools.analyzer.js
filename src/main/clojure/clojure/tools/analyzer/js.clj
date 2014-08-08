@@ -55,9 +55,12 @@
 
 (def ^:dynamic *ns* 'cljs.user)
 
+(defonce core-env (atom {}))
+
 (defn global-env []
-  (atom {:namespaces          '{goog {:mappings {}, :js-namespace true, :ns goog}
-                                Math {:mappings {}, :js-namespace true, :ns Math}}
+  (atom {:namespaces          (merge '{goog {:mappings {}, :js-namespace true, :ns goog}
+                                       Math {:mappings {}, :js-namespace true, :ns Math}}
+                                     @core-env)
          :js-dependency-index (deps/js-dependency-index {})}))
 
 (defn empty-env
@@ -517,4 +520,12 @@
                       (recur))))))))
         (get-in @*env* [::analyzed-cljs path])))))
 
-(require 'cljs.core)
+(defn setup-rt []
+  (when-not (seq @core-env)
+    (require 'cljs.core)
+    (env/with-env (global-env)
+      (analyze-ns 'cljs.core)
+      (analyze '(ns cljs.user))
+      (reset! core-env (select-keys (:namespaces (env/deref-env)) '[cljs.core cljs.user])))))
+
+(setup-rt)
