@@ -31,7 +31,7 @@
              [collect-keywords :refer [collect-keywords]]
              [analyze-host-expr :refer [analyze-host-expr]]]
             [clojure.tools.analyzer.js.utils
-             :refer [desugar-ns-specs validate-ns-specs ns-resource source-path res-path]]
+             :refer [desugar-ns-specs validate-ns-specs ns-resource ns->relpath res-path]]
             [cljs
              [tagged-literals :as tags]
              [js-deps :as deps]]
@@ -496,10 +496,11 @@
   (env/ensure (global-env)
     (let [res (ns-resource ns)]
       (assert res (str "Can't find " ns " in classpath"))
-      (let [filename (source-path res)
+      (let [filename (ns->relpath ns)
             path (res-path res)]
         (when-not (get-in *env* [::analyzed-cljs path])
-          (binding [*ns* *ns*]
+          (binding [*ns*   *ns*
+                    *file* filename]
             (with-open [rdr (io/reader res)]
               (let [pbr (readers/indexing-push-back-reader
                          (java.io.PushbackReader. rdr) 1 filename)
