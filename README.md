@@ -10,6 +10,26 @@ Provides js-specific passes for tools.analyzer
 * [License](#license)
 
 ## Example Usage
+```clojure
+user> (require '[clojure.tools.analyzer.js :as a]
+               '[clojure.tools.analyzer.env :as env)
+nil
+user> (def env (a/global-env))
+#'user/env
+user> (env/with-env env (a/analyze 1))
+{:op        :const,
+ :top-level true,
+ :tag       number,
+ :env       {:context :ctx/statement, :locals {}, :ns cljs.user},
+ :type      :number,
+ :literal?  true,
+ :val       1,
+ :form      1}
+user> (env/with-env env (a/analyzer-ns 'cljs.core))
+[{:op :ns ..}
+ {:op :def ..}
+ ..]
+```
 
 [AST Quickref](http://clojure.github.io/tools.analyzer.js/spec/quickref.html)
 ========================================
