@@ -270,4 +270,4 @@
           ^:children
           [:meta "A :map AST node representing the metadata of expression."]
           ^:children
-          [:expr "The expression this metadata is attached to, :op is one of :vector, :map, :set, :fn or :reify"]]}]}
+          [:expr "The expression this metadata is attached to, :op is one of :vector, :map, :set or :fn"]]}]}
