@@ -70,12 +70,20 @@
   (list 'defrecord* name (map #(-emit-form* % opts) fields) pmask
         (-emit-form* body opts)))
 
+(defmethod -emit-form :case-then
+  [{:keys [then]} opts]
+  (-emit-form* then opts))
+
+(defmethod -emit-form :case-test
+  [{:keys [test]} opts]
+  (-emit-form* test opts))
+
 (defmethod -emit-form :case
   [{:keys [test nodes default]} opts]
   `(case* ~(-emit-form* test opts)
           ~@(reduce (fn [acc {:keys [tests then]}]
                       (-> acc
-                        (update-in 0 conj (mapv #(-emit-form* (:test %) opts) tests))
+                        (update-in 0 conj (mapv #(-emit-form* % opts) tests))
                         (update-in 1 conj (-emit-form* then opts))))
                     [[] []] nodes)
           ~(-emit-form* default opts)))
