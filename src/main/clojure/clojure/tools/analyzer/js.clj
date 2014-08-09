@@ -100,8 +100,9 @@
       (get-in env [:locals sym])))
 
 (defn desugar-symbol [form env]
-  (let [ns (namespace form)
-        n (name form)]
+  (let [ns (fix-ns (namespace form))
+        n (name form)
+        form (symbol ns n)]
     (cond
 
      ;; js/foo -> (js* "foo")
