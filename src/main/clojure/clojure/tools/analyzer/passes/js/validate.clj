@@ -20,6 +20,12 @@
                           :ast (prewalk ast cleanup)}
                          (source-info env)))) )
 
+(defmethod -validate :maybe-host-form [{:keys [form env] :as ast}]
+  (throw (ex-info (str "Cannot resolve: " form)
+                  (merge {:sym form
+                          :ast (prewalk ast cleanup)}
+                         (source-info env)))) )
+
 (defn validate-tag [t {:keys [env] :as ast}]
   (let [tag (ast t)]
     (if (symbol? tag)
