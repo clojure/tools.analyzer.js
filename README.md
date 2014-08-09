@@ -31,6 +31,8 @@ Developer Information
 
 * [GitHub project](https://github.com/clojure/tools.analyzer.js)
 
+* [API index](http://clojure.github.io/tools.analyzer.js)
+
 * [Bug Tracker](http://dev.clojure.org/jira/browse/TANAL)
 
 * [Continuous Integration](http://build.clojure.org/job/tools.analyzer.js/)
