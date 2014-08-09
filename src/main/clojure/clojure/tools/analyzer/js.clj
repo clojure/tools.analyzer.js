@@ -367,9 +367,9 @@
                       {:ns           ns
                        :js-namespace true})
                (swap! env/*env* update-in [:namespaces ns :mappings] merge
-                      (reduce (fn [m k] (assoc m k {:op          :js-var
-                                                   :name        k
-                                                   :namespace   ns}))
+                      (reduce (fn [m k] (assoc m k {:op   :js-var
+                                                   :name k
+                                                   :ns   ns}))
                               {} refer)))
           (analyze-ns ns)))))
 
@@ -383,7 +383,9 @@
 (defn populate-env
   [{:keys [import require require-macros refer-clojure]} ns-name env]
   (let [imports (reduce-kv (fn [m prefix suffixes]
-                             (merge m (into {} (mapv (fn [s] [s (symbol (str prefix "." s))]) suffixes)))) {} import)
+                             (merge m (into {} (mapv (fn [s] [s {:op   :js-var
+                                                                :ns   prefix
+                                                                :name s}]) suffixes)))) {} import)
         require-aliases (reduce (fn [m [ns {:keys [as]}]]
                                   (if as
                                     (assoc m as ns)
