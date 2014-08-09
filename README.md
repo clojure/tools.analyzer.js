@@ -25,7 +25,7 @@ user> (env/with-env env (a/analyze 1))
  :literal?  true,
  :val       1,
  :form      1}
-user> (env/with-env env (a/analyzer-ns 'cljs.core))
+user> (env/with-env env (a/analyze-ns 'cljs.core))
 [{:op :ns ..}
  {:op :def ..}
  ..]
