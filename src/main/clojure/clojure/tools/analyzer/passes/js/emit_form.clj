@@ -53,9 +53,8 @@
                      (map #(-emit-form* % opts) vals))))
 
 (defmethod -emit-form :js-array
-  [{:keys [keys vals]} opts]
-  (->JSValue (zipmap (map #(-emit-form* % opts) keys)
-                     (map #(-emit-form* % opts) vals))))
+  [{:keys [items]} opts]
+  (->JSValue (mapv #(-emit-form* % opts) items)))
 
 (defmethod print-method JSValue [^JSValue o ^Writer w]
   (.write w "#js ")
