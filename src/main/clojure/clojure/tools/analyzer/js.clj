@@ -268,7 +268,8 @@
         protocols (-> name meta :protocols)
 
         _ (swap! *env* assoc-in [:namespaces ns :mappings name]
-                 {:op        :type
+                 {:op        :var
+                  :type      true
                   :name      name
                   :ns        ns
                   :fields    fields

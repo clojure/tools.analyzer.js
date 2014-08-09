@@ -6,26 +6,14 @@
 ;;   the terms of this license.
 ;;   You must not remove this notice, or any other, from this software.
 
-(ns clojure.tools.analyzer.passes.js.analyze-host-expr
-  (:require [clojure.tools.analyzer :as ana]
-            [clojure.tools.analyzer.utils :refer [resolve-var resolve-ns]]
-            [clojure.tools.analyzer.env :as env]))
+(ns clojure.tools.analyzer.passes.js.analyze-host-expr)
 
-
-(defmulti analyze-host-expr :op)
-(defmethod analyze-host-expr :default [ast] ast)
-
-(defmethod analyze-host-expr :maybe-class
-  [{:keys [class env form] :as ast}]
-  (if-let [the-class (resolve-var class env)]
-    (merge (ana/-analyze :const the-class env :type)
-           {:form form})
+(defn analyze-host-expr
+  [{:keys [op m-or-f target] :as ast}]
+  (if (= op :host-interop)
+    (merge (dissoc ast m-or-f)
+           {:op       :host-call
+            :method   m-or-f
+            :args     []
+            :children [:target :args]})
     ast))
-
-(defmethod analyze-host-expr :host-interop
-  [{:keys [m-or-f target] :as ast}]
-  (merge (dissoc ast m-or-f)
-         {:op       :host-call
-          :method   m-or-f
-          :args     []
-          :children [:target :args]}))
