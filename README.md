@@ -2,6 +2,18 @@
 
 Provides js-specific passes for tools.analyzer
 
+* [Example Usage](#example-usage)
+* [AST Quickref](#ast-quickref)
+* [Releases and Dependency Information](#releases-and-dependency-information)
+* [Changelog](#changelog)
+* [Developer Information](#developer-information)
+* [License](#license)
+
+## Example Usage
+
+[AST Quickref](http://clojure.github.io/tools.analyzer.js/spec/quickref.html)
+========================================
+
 Releases and Dependency Information
 ========================================
 
@@ -25,6 +37,9 @@ Latest stable release: 0.1.0-beta1
   <version>0.1.0-beta1</version>
 </dependency>
 ```
+
+[Changelog](CHANGELOG.md)
+========================================
 
 Developer Information
 ========================================
