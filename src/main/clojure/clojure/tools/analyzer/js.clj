@@ -329,10 +329,14 @@
                       {:op       :case-node
                        :tests    (mapv (fn [test]
                                          {:op       :case-test
+                                          :form     test
+                                          :env      expr-env
                                           :test     (-analyze test expr-env)
                                           :children [:test]})
                                        tests)
                        :then     {:op   :case-then
+                                  :form     test
+                                  :env      env
                                   :then (-analyze then env)
                                   :children [:then]}
                        :children [:tests :then]})
