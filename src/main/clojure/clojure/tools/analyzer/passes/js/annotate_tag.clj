@@ -78,6 +78,8 @@
 (defmethod -annotate-tag :default [ast] ast)
 
 (defn annotate-tag
+  "If the AST node type is a constant object or contains :tag metadata,
+   attach the appropriate :tag to the node."
   [ast]
   (if-let [tag (or (-> ast :form meta :tag)
                    (-> ast :val meta :tag))]

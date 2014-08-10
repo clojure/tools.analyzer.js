@@ -10,7 +10,11 @@
   (:require [clojure.tools.analyzer.env :as env]
             [clojure.tools.analyzer.utils :refer [resolve-ns resolve-var]]))
 
-(defmulti analyze-host-expr :op)
+(defmulti analyze-host-expr
+  "Transform :host-interop nodes into :host-call, transform
+  :maybe-class or :maybe-host-form nodes resolvable to js vars
+  into :js-var nodes"
+  :op)
 
 (defmethod analyze-host-expr :default [ast] ast)
 

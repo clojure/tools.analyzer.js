@@ -7,7 +7,7 @@
 ;;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.tools.analyzer.js
-  "Analyzer for clojure code, extends tools.analyzer with JS specific passes/forms"
+  "Analyzer for clojurescript code, extends tools.analyzer with JS specific passes/forms"
   (:refer-clojure :exclude [macroexpand-1 var? *ns* ns-resolve])
   (:require [clojure.tools.analyzer
              :as ana
@@ -153,6 +153,7 @@
     form))
 
 (defn macroexpand-1 [form env]
+  "If form represents a macro form returns its expansion, else returns form."
   (env/ensure (global-env)
     (if (seq? form)
       (let [op (first form)]
@@ -175,6 +176,7 @@
       (with-meta (desugar-symbol form env) (meta form)))))
 
 (defn create-var
+  "Creates a var map for sym and returns it."
   [sym {:keys [ns]}]
   (with-meta {:op   :var
               :name sym
@@ -410,29 +412,55 @@
         (assoc-in ast [:meta] (ana/-analyze :const const-map env)))
       ast)))
 
-(defn ^:dynamic run-passes [ast]
-  (binding [elides (update-in elides [:all] into
-                              #{:line :column :end-line :end-column :file :source})]
-    (-> ast
+(defn ^:dynamic run-passes
+  "Applies the following passes in the correct order to the AST:
+   * uniquify
+   * add-binding-atom
+   * source-info
+   * elide-meta
+   * warn-earmuff
+   * js.collect-keywords
+   * js.annotate-tag
+   * js.analyze-host-expr
+   * js.infer-tag
+   * js.validate"
+  [ast]
+  (-> ast
 
-      uniquify-locals
-      add-binding-atom
+    uniquify-locals
+    add-binding-atom
 
-      (prewalk (fn [ast]
-                 (-> ast
-                   warn-earmuff
-                   source-info
-                   elide-meta
-                   collect-keywords)))
+    (prewalk (fn [ast]
+               (-> ast
+                 warn-earmuff
+                 source-info
+                 elide-meta
+                 collect-keywords)))
 
-      (postwalk (fn [ast]
-                  (-> ast
-                    annotate-tag
-                    analyze-host-expr
-                    infer-tag
-                    validate))))))
+    (postwalk (fn [ast]
+                (-> ast
+                  annotate-tag
+                  analyze-host-expr
+                  infer-tag
+                  validate)))))
 
 (defn analyze
+  "Returns an AST for the form.
+
+   Binds tools.analyzer/{macroexpand-1,create-var,parse} to
+   tools.analyzer.js/{macroexpand-1,create-var,parse} and analyzes the form.
+
+   If provided, opts should be a map of options to analyze, currently the only valid
+   options are :bindings and :passes-opts.
+   If provided, :bindings should be a map of Var->value pairs that will be merged into the
+   default bindings for tools.analyzer, useful to provide custom extension points.
+   If provided, :passes-opts should be a map of pass-name-kw->pass-config-map pairs that
+   can be used to configure the behaviour of each pass.
+
+   E.g.
+   (analyze form env {:bindings  {#'ana/macroexpand-1 my-mexpand-1}})
+
+   Calls `run-passes` on the AST."
   ([form] (analyze form (empty-env) {}))
   ([form env] (analyze form env {}))
   ([form env opts]
@@ -440,12 +468,16 @@
                             #'ana/create-var    create-var
                             #'ana/parse         parse
                             #'ana/var?          var?
-                            #'ana/analyze-form  analyze-form}
+                            #'ana/analyze-form  analyze-form
+                            #'elides            (update-in elides [:all] into
+                                                           #{:line :column :end-line :end-column :file :source})}
                            (when-not (thread-bound? #'*ns*)
                              {#'*ns* *ns*})
                            (:bindings opts))
        (env/ensure (global-env)
-         (run-passes (-analyze form env))))))
+         (env/with-env (swap! env/*env* merge
+                              {:passes-opts (:passes-opts opts)})
+           (run-passes (-analyze form env)))))))
 
 (defn analyze'
   "Like `analyze` but runs cleanup on the AST"
@@ -454,7 +486,10 @@
   ([form env opts]
      (prewalk (analyze form env opts) cleanup)))
 
-(defn analyze-ns [ns]
+(defn analyze-ns
+  "Analyzes a whole namespace, returns a vector of the ASTs for all the
+   top-level ASTs of that namespace."
+  [ns]
   (env/ensure (global-env)
     (let [res (ns-resource ns)]
       (assert res (str "Can't find " ns " in classpath"))

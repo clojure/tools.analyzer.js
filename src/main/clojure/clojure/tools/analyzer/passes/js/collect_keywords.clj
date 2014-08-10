@@ -9,7 +9,10 @@
 (ns clojure.tools.analyzer.passes.js.collect-keywords
   (:require [clojure.tools.analyzer.env :as env]))
 
-(defn collect-keywords [ast]
+(defn collect-keywords
+  "Assoc compilation-unit shared id to each :const node with :type :keyword,
+   The keyword to id map is available in the global env under ::keywords"
+  [ast]
   (if (and (= (:op ast) :const)
            (= (:type ast) :keyword))
     (let [v (:val ast)

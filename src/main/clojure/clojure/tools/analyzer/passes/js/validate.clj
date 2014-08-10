@@ -54,7 +54,10 @@
                               :ast (prewalk ast cleanup)}
                              (source-info env)))))))
 
-(defn validate [ast]
+(defn validate
+  "Validate tags and symbols.
+   Throws exceptions when invalid forms are encountered"
+  [ast]
   (merge (-validate ast)
          (when (:tag ast)
            {:tag (validate-tag :tag ast)})
