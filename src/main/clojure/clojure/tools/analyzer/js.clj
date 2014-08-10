@@ -99,6 +99,17 @@
   (or (resolve-var sym env)
       (get-in env [:locals sym])))
 
+(defn dotted-symbol? [sym env]
+  (let [n (name form)
+        ns (namespace form)
+        idx (.indexOf n ".")
+        sym (and (pos? idx)
+                 (symbol ns (.substring n 0 idx)))]
+    (and (not= idx -1)
+         (not (resolve-sym form env))
+         (not= sym form)
+         (resolve-sym sym env))))
+
 (defn desugar-symbol [form env]
   (let [ns (fix-ns (namespace form))
         n (name form)
@@ -124,13 +135,7 @@
        (list '. (symbol "js" (str namespace)) (symbol (str "-" name))))
 
      ;; var.foo -> (. var -foo)
-     (let [idx (.indexOf n ".")
-           sym (and (pos? idx)
-                    (symbol ns (.substring n 0 idx)))]
-       (and (not= idx -1)
-            (not (resolve-sym form env))
-            (not= sym form)
-            (resolve-sym sym env)))
+     (dotted-symbol? form env)
      (let [idx (.indexOf n ".")
            sym (symbol ns (.substring n 0 idx))]
        (list '. sym (symbol (str "-" (.substring n (inc idx) (count n))))))
@@ -147,8 +152,7 @@
            (symbol? (first form)))
       (let [[op & expr] form
             opname (name op)
-            opns   (namespace op)
-            op-s   (str op)]
+            opns   (namespace op)]
         (cond
 
          ;; (.foo bar ..) -> (. bar foo ..)
@@ -160,7 +164,8 @@
 
          ;; (foo. ..) -> (new foo ..)
          (= (last opname) \.)
-         (list* 'new (symbol (subs op-s 0 (dec (count op-s)))) expr)
+         (let [op-s (str op)]
+           (list* 'new (symbol (subs op-s 0 (dec (count op-s)))) expr))
 
          ;; (js/foo ..) -> ((js* "foo") ..)
          (= "js" opns)
@@ -181,13 +186,7 @@
            (list '. (symbol "js" (str namespace)) (list* name expr)))
 
          ;; (var.foo ..) -> (. var foo ..)
-         (let [idx (.indexOf opname ".")
-               sym (and (pos? idx)
-                        (symbol opns (.substring opname 0 idx)))]
-           (and (not= idx -1)
-                (not (resolve-sym form env))
-                (not= sym form)
-                (resolve-sym sym env)))
+         (dotted-symbol? op env)
          (let [idx (.indexOf opname ".")
                sym (symbol opns (.substring opname 0 idx))]
            (list '. sym (list* (symbol (.substring opname (inc idx) (count opname))) expr)))
