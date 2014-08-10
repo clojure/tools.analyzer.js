@@ -80,7 +80,7 @@
   nav {
     background: #f5f5f5;
     font-size: 11px;
-    line-height: 17px;
+    line-height: 16px;
     padding: 0.5rem 1rem;
     position: fixed;
     width: 160px;
