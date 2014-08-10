@@ -39,6 +39,7 @@
            :var {:op   :js-var
                  :name field
                  :ns   nil}})
+
    (get-in (env/deref-env) [:namespaces (resolve-ns class env) :js-namespace])
    (let [field (or (:name (resolve-var form env)) field)]
      (merge (dissoc ast :field :class)
