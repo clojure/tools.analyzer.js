@@ -159,18 +159,23 @@
          (when-let [tag (:tag (meta (:form local)))]
            {:return-tag tag})))
 
+(defn var-sym [var]
+  (when-let [{:keys [ns name] :or {ns 'js}} var]
+    (symbol (str ns) (str name))))
+
 (defmethod -infer-tag :new
   [{:keys [class] :as ast}]
-  (let [class (or (first (:raw-forms class))
-                  (:form class))]
-    (assoc ast :tag (case class
+  (if-let [v (var-sym (:var class))]
+    (assoc ast :tag (case v
                       js/Object   'object
                       js/String   'string
                       js/Array    'array
                       js/Number   'number
                       js/Function 'function
                       js/Boolean  'boolean
-                      class))))
+                      v))
+    ast))
+
 (defn infer-tag
   [{:keys [tag] :as ast}]
   (merge (-infer-tag ast)

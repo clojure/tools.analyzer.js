@@ -31,18 +31,6 @@ user> (env/with-env env (a/analyze-ns 'cljs.core))
  ..]
 ```
 
-## Notes and Future Plans
-Currently forms that use special interop syntax like:
-* js/foo
-* js-ns/foo
-* js-var
-
-get reduced to a combination of js* and field access at macroexpansion time.
-
-While this simplifies the job of a potential emitter & removes any ambiguity (users of the cljs analyzer have to special case :vars whose :ns is 'js for example) at the cost of a slightly more complex macroexpander, it also causes a loss of information from the original source to the final AST as js* expressions could contain anything.
-
-This needs to be reconsidered, probably the addition of a :js-var node will be a better solution.
-
 [AST Quickref](http://clojure.github.io/tools.analyzer.js/spec/quickref.html)
 ========================================
 

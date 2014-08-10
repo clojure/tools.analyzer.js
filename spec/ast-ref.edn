@@ -174,6 +174,11 @@
           [:keys "A vector of AST nodes representing the keys of the js object"]
           ^:children
           [:vals "A vector of AST nodes representing the vals of the js object"]]}
+  {:op   :js-var
+   :doc  "Node for a js-var symbol"
+   :keys [[:form "A symbol naming the js-var in the form: `js/foo`, `js-ns/foo` or `js-var`"]
+          [:var "The js-var object this symbol refers to, if `:form` is in the form `js/foo`, `:ns` will be nil"]
+          [:assignable? "`true`"]]}
   {:op   :let
    :doc  "Node for a let* special-form expression"
    :keys  [[:form "`(let* [binding*] body*)`"]
