@@ -6,14 +6,44 @@
 ;;   the terms of this license.
 ;;   You must not remove this notice, or any other, from this software.
 
-(ns clojure.tools.analyzer.passes.js.analyze-host-expr)
+(ns clojure.tools.analyzer.passes.js.analyze-host-expr
+  (:require [clojure.tools.analyzer.env :as env]
+            [clojure.tools.analyzer.utils :refer [resolve-ns]]))
 
-(defn analyze-host-expr
-  [{:keys [op m-or-f target] :as ast}]
-  (if (= op :host-interop)
-    (merge (dissoc ast m-or-f)
-           {:op       :host-call
-            :method   m-or-f
-            :args     []
-            :children [:target :args]})
+(defmulti analyze-host-expr :op)
+
+(defmethod analyze-host-expr :default [ast] ast)
+
+(defmethod analyze-host-expr :host-interop
+  [{:keys [m-or-f target] :as ast}]
+  (merge (dissoc ast :m-or-f)
+         {:op       :host-call
+          :method   m-or-f
+          :args     []
+          :children [:target :args]}))
+
+(defmethod analyze-host-expr :maybe-class
+  [{:keys [class] :as ast}]
+  (if-let [v (resolve-var form env)]
+    (merge (dissoc ast :class)
+           {:op  :js-var
+            :var v})
     ast))
+
+(defmethod analyze-host-expr :maybe-host-form
+  [{:keys [class field env] :as ast}]
+  (cond
+   (= 'js class)
+   (merge (dissoc ast :field :class)
+          {:op  :js-var
+           :var {:op   :js-var
+                 :name field
+                 :ns   nil}})
+   (get-in (env/deref-env) [:namespaces (resolve-ns class env) :js-namespace])
+   (merge (dissoc ast :field :class)
+          {:op  :js-var
+           :var {:op   :js-var
+                 :name field
+                 :ns   (resolve-ns class env)}})
+   :else
+   ast))
