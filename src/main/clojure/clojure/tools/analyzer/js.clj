@@ -475,9 +475,8 @@
                              {#'*ns* *ns*})
                            (:bindings opts))
        (env/ensure (global-env)
-         (env/with-env (swap! env/*env* merge
-                              {:passes-opts (:passes-opts opts)})
-           (run-passes (-analyze form env)))))))
+         (swap! env/*env* merge {:passes-opts (:passes-opts opts)})
+         (run-passes (-analyze form env))))))
 
 (defn analyze'
   "Like `analyze` but runs cleanup on the AST"
