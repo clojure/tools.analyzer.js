@@ -102,7 +102,7 @@
   (or (resolve-var sym env)
       (get-in env [:locals sym])))
 
-(defn dotted-symbol? [sym env]
+(defn dotted-symbol? [form env]
   (let [n (name form)
         ns (namespace form)
         idx (.indexOf n ".")

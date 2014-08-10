@@ -166,14 +166,14 @@
 (defmethod -infer-tag :new
   [{:keys [class] :as ast}]
   (if-let [v (var-sym (:var class))]
-    (assoc ast :tag (case class
+    (assoc ast :tag (case v
                       js/Object   'object
                       js/String   'string
                       js/Array    'array
                       js/Number   'number
                       js/Function 'function
                       js/Boolean  'boolean
-                      class))
+                      v))
     ast))
 
 (defn infer-tag

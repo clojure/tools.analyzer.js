@@ -8,7 +8,7 @@
 
 (ns clojure.tools.analyzer.passes.js.analyze-host-expr
   (:require [clojure.tools.analyzer.env :as env]
-            [clojure.tools.analyzer.utils :refer [resolve-ns]]))
+            [clojure.tools.analyzer.utils :refer [resolve-ns resolve-var]]))
 
 (defmulti analyze-host-expr :op)
 
@@ -23,8 +23,8 @@
           :children [:target :args]}))
 
 (defmethod analyze-host-expr :maybe-class
-  [{:keys [class] :as ast}]
-  (if-let [v (resolve-var form env)]
+  [{:keys [class env] :as ast}]
+  (if-let [v (resolve-var class env)]
     (merge (dissoc ast :class)
            {:op  :js-var
             :var v})
