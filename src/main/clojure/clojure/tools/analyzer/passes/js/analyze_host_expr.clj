@@ -31,7 +31,7 @@
     ast))
 
 (defmethod analyze-host-expr :maybe-host-form
-  [{:keys [class field env] :as ast}]
+  [{:keys [class field env form] :as ast}]
   (cond
    (= 'js class)
    (merge (dissoc ast :field :class)
@@ -40,10 +40,11 @@
                  :name field
                  :ns   nil}})
    (get-in (env/deref-env) [:namespaces (resolve-ns class env) :js-namespace])
-   (merge (dissoc ast :field :class)
-          {:op  :js-var
-           :var {:op   :js-var
-                 :name field
-                 :ns   (resolve-ns class env)}})
+   (let [field (or (:name (resolve-var form env)) field)]
+     (merge (dissoc ast :field :class)
+            {:op  :js-var
+             :var {:op   :js-var
+                   :name field
+                   :ns   (resolve-ns class env)}}))
    :else
    ast))
