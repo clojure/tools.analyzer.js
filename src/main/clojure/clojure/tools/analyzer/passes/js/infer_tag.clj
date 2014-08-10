@@ -160,8 +160,8 @@
            {:return-tag tag})))
 
 (defn var-sym [var]
-  (when-let [{:keys [ns name] :or {ns 'js}} var]
-    (symbol (str ns) (str name))))
+  (when-let [{:keys [ns name]} var]
+    (symbol (str (or ns 'js)) (str name))))
 
 (defmethod -infer-tag :new
   [{:keys [class] :as ast}]
