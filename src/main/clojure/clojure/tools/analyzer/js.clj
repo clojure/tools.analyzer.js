@@ -75,6 +75,9 @@
     "cljs.core"
     ns))
 
+(defn fix-symbol [sym]
+  (symbol (fix-ns (namespace sym)) (name sym)))
+
 (defn ns-resolve [ns sym]
   (let [ns (if (string? ns)
              (symbol ns)
@@ -114,86 +117,40 @@
   (let [ns (fix-ns (namespace form))
         n (name form)
         form (symbol ns n)]
-    (cond
+    (if (dotted-symbol? form env)
+      (let [idx (.indexOf n ".")
+            sym (symbol ns (.substring n 0 idx))]
+        (list '. sym (symbol (str "-" (.substring n (inc idx) (count n))))))
 
-     ;; js/foo -> (js* "foo")
-     (= "js" ns)
-     (list 'js* (name form))
-
-     ;; js-ns/foo -> (. js/js-ns -foo)
-     (and ns (get-in (env/deref-env)
-                     [:namespaces (resolve-ns (symbol ns) env) :js-namespace]))
-     (let [target (symbol "js" (str (resolve-ns (symbol ns) env)))
-           op (symbol (name form))]
-       (list '. target (symbol (str "-" (name form)))))
-
-     ;; js-var (. js/js-ns -var)
-     (and (not ns)
-          (not (get-in env [:locals form]))
-          (= :js-var (:op (resolve-var form env))))
-     (let [{:keys [namespace name]} (resolve-var form env)]
-       (list '. (symbol "js" (str namespace)) (symbol (str "-" name))))
-
-     ;; var.foo -> (. var -foo)
-     (dotted-symbol? form env)
-     (let [idx (.indexOf n ".")
-           sym (symbol ns (.substring n 0 idx))]
-       (list '. sym (symbol (str "-" (.substring n (inc idx) (count n))))))
-
-     :else form)))
+      form)))
 
 (defn desugar-host-expr [form env]
-  (-> (cond
+  (if (symbol? (first form))
+    (let [[op & expr] form
+          opname (name op)
+          opns   (namespace op)]
+      (cond
 
-      (symbol? form)
-      (desugar-symbol form env)
+       ;; (.foo bar ..) -> (. bar foo ..)
+       (= (first opname) \.)
+       (let [[target & args] expr
+             args (list* (symbol (subs opname 1)) args)]
+         (list '. target (if (= 1 (count args))
+                           (first args) args)))
 
-      (and (seq? form)
-           (symbol? (first form)))
-      (let [[op & expr] form
-            opname (name op)
-            opns   (namespace op)]
-        (cond
+       ;; (foo. ..) -> (new foo ..)
+       (= (last opname) \.)
+       (let [op-s (str op)]
+         (list* 'new (symbol (subs op-s 0 (dec (count op-s)))) expr))
 
-         ;; (.foo bar ..) -> (. bar foo ..)
-         (= (first opname) \.)
-         (let [[target & args] expr
-               args (list* (symbol (subs opname 1)) args)]
-           (list '. target (if (= 1 (count args))
-                             (first args) args)))
+       ;; (var.foo ..) -> (. var foo ..)
+       (dotted-symbol? op env)
+       (let [idx (.indexOf opname ".")
+             sym (symbol opns (.substring opname 0 idx))]
+         (list '. sym (list* (symbol (.substring opname (inc idx) (count opname))) expr)))
 
-         ;; (foo. ..) -> (new foo ..)
-         (= (last opname) \.)
-         (let [op-s (str op)]
-           (list* 'new (symbol (subs op-s 0 (dec (count op-s)))) expr))
-
-         ;; (js/foo ..) -> ((js* "foo") ..)
-         (= "js" opns)
-         (list* (list 'js* opname) expr)
-
-         ;; (js-ns/foo ..) -> (. js/js-ns foo ..)
-         (and opns (get-in (env/deref-env)
-                           [:namespaces (resolve-ns (symbol opns) env) :js-namespace]))
-         (let [target (symbol "js" (str (resolve-ns (symbol opns) env)))
-               op (symbol opname)]
-           (list '. target (list* op expr)))
-
-         ;; (js-var ..) -> (. js/js-ns var ..)
-         (and (not opns)
-              (not (get-in env [:locals op]))
-              (= :js-var (:op (resolve-var op env))))
-         (let [{:keys [namespace name]} (resolve-var op env)]
-           (list '. (symbol "js" (str namespace)) (list* name expr)))
-
-         ;; (var.foo ..) -> (. var foo ..)
-         (dotted-symbol? op env)
-         (let [idx (.indexOf opname ".")
-               sym (symbol opns (.substring opname 0 idx))]
-           (list '. sym (list* (symbol (.substring opname (inc idx) (count opname))) expr)))
-
-         :else form))
-      :else form)
-    (with-meta (meta form))))
+       :else (list* (fix-symbol op) expr)))
+    form))
 
 (defn macroexpand-1 [form env]
   (env/ensure (global-env)
@@ -202,22 +159,20 @@
         (if (or (not (symbol? op))
                 (specials op))
           form
-          (let [clj-macro (maybe-macro op env)]
-            (if (and clj-macro
-                     ;; (not (resolve-var op env))
-                     (not (-> env :locals (get op))))
-              (with-bindings (merge {#'c.c/*ns* (create-ns *ns*)}
-                                    (when-not (thread-bound? #'*ns*)
-                                      {#'*ns* *ns*}))
-                (let [ret (apply clj-macro form env (rest form))] ; (m &form &env & args)
-                  (if (and (seq? ret)
-                           (= 'js* (first ret)))
-                    (vary-meta ret merge
-                               (when (-> clj-macro meta :cljs.core/numeric)
-                                 {:tag 'number}))
-                    ret)))
-              (desugar-host-expr form env)))))
-      (desugar-host-expr form env))))
+          (if-let [clj-macro (and (not (-> env :locals (get op)))
+                                  (maybe-macro op env))]
+            (with-bindings (merge {#'c.c/*ns* (create-ns *ns*)}
+                                  (when-not (thread-bound? #'*ns*)
+                                    {#'*ns* *ns*}))
+              (let [ret (apply clj-macro form env (rest form))] ; (m &form &env & args)
+                (if (and (seq? ret)
+                         (= 'js* (first ret)))
+                  (vary-meta ret merge
+                             (when (-> clj-macro meta :cljs.core/numeric)
+                               {:tag 'number}))
+                  ret)))
+            (with-meta (desugar-host-expr form env) (meta form)))))
+      (with-meta (desugar-symbol form env) (meta form)))))
 
 (defn create-var
   [sym {:keys [ns]}]
