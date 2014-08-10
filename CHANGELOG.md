@@ -1,6 +1,6 @@
 Changelog
 ========================================
-* Release 0.1.0-beta1 on 10 Aug 2014
+* Release 0.1.0-beta2 on 10 Aug 2014
   * Fixed emit-form
   * Throw on :maybe-host-form
   * Type literals are :var with :type true
