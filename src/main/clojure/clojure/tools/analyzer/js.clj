@@ -526,11 +526,11 @@
               *print-length* nil
               *print-meta* true]
       (let [s (pr-str (:namespaces @(global-env)))]
-        (spit (io/resource "cljs-env.res") s)))))
+        (spit (io/resource "tools.analyzer.js/cached-env.res") s)))))
 
 (defn restore-env []
   (reset! core-env
-          (reader/read-string (slurp (io/resource "cljs-env.res")))))
+          (reader/read-string (slurp (io/resource "tools.analyzer.js/cached-env.res")))))
 
 (defn setup-rt []
   (require 'cljs.core)
