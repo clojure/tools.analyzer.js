@@ -522,22 +522,30 @@
                       (recur))))))))
         (get-in @*env* [::analyzed-cljs path])))))
 
-(defn backup-env []
-  (with-redefs [clojure.core/pr-on (fn [x w] (if (clojure.core/var? x)
-                                              (print-dup x w)
-                                              (print-method x w))
-                                     nil)]
-    (binding [*print-level* nil
-              *print-length* nil
-              *print-meta* true]
-      (let [s (pr-str (:namespaces @(global-env)))]
-        (spit (io/resource "tools.analyzer.js/cached-env.res") s)))))
+(defn backup-env
+  "Caches the current namespaces state in a resource file, can be restored with
+   (restore-env)"
+  []
+  (env/ensure (global-env)
+    (with-redefs [clojure.core/pr-on (fn [x w] (if (clojure.core/var? x)
+                                                (print-dup x w)
+                                                (print-method x w))
+                                       nil)]
+      (binding [*print-level* nil
+                *print-length* nil
+                *print-meta* true]
+        (let [s (pr-str (:namespaces (env/deref-env)))]
+          (spit (io/resource "tools.analyzer.js/cached-env.res") s))))))
 
-(defn restore-env []
+(defn restore-env
+  "Uses a cached env to populate the default namespace map"
+  []
   (reset! core-env
           (reader/read-string (slurp (io/resource "tools.analyzer.js/cached-env.res")))))
 
-(defn setup-rt! []
+(defn setup-rt!
+  "Setups the basic runtime, loading cljs.core and initializing cljs.user"
+  []
   (require 'cljs.core)
   (when-not (or (seq @core-env)
                 (seq (restore-env)))
@@ -546,38 +554,42 @@
       (analyze '(ns cljs.user))
       (reset! core-env (select-keys (:namespaces (env/deref-env)) '[cljs.core cljs.user])))))
 
-(defn cljs-env->env []
-  (reduce (fn [m {:keys [name excludes uses requires use-macros require-macros imports defs]}]
-            (let [imports (reduce-kv (fn [m k v]
-                                       (assoc m k (let [s (s/split (c.c/name v) #"\.")]
-                                                    {:op   :js-var
-                                                     :ns   (symbol (s/join "." (butlast s)))
-                                                     :name (symbol (last s))}))) {} imports)
-                  parse-requires (fn [r] (reduce-kv (fn [m k v] (if (not= k v)
-                                                                (assoc m k v)
-                                                                m)) {} r))
-                  core-mappings (apply dissoc (get-in (env/deref-env) [:namespaces 'cljs.core :mappings]) excludes)
-                  core-macro-mappings (apply dissoc (core-macros) excludes)
-                  js-namespaces (reduce (fn [m ns] (assoc m ns {:ns ns :js-namespace true})) {} (set (keys requires)))
-                  ;; should resolve bindings
-                  mappings (reduce-kv (fn [m k v] (assoc m k {:op   (if (js-namespaces v) :js-var :var)
-                                                             :name k
-                                                             :ns   v})) {} uses)
-                  macro-mappings (reduce-kv (fn [m k v]
-                                              (let [macro (ns-resolve v k)]
-                                                (if (:macro (meta macro))
-                                                  (assoc m k macro)
-                                                  m))) {} uses)
-                  defs (reduce-kv (fn [m k v]
-                                    (assoc m k {:op   :var
-                                                :name (vary-meta k merge (select-keys v #{:protocol-impl}))
-                                                :ns   name})) {} defs)]
-              (merge m js-namespaces
-                     {name {:ns             name
-                            :mappings       (merge imports core-mappings mappings defs)
-                            :macro-mappings (merge core-macro-mappings macro-mappings)
-                            :aliases        (parse-requires requires)
-                            :macro-aliases  (parse-requires require-macros)}})))
-          (vals @(cljs.ana/namespaces))))
+(defn cljs-env->env
+  "Converts the namespace map of the current cljs environment in a tools.analyzer.js
+   namespace map and returns it."
+  []
+  (env/ensure (global-env)
+    (reduce (fn [m {:keys [name excludes uses requires use-macros require-macros imports defs]}]
+              (let [imports (reduce-kv (fn [m k v]
+                                         (assoc m k (let [s (s/split (c.c/name v) #"\.")]
+                                                      {:op   :js-var
+                                                       :ns   (symbol (s/join "." (butlast s)))
+                                                       :name (symbol (last s))}))) {} imports)
+                    parse-requires (fn [r] (reduce-kv (fn [m k v] (if (not= k v)
+                                                                  (assoc m k v)
+                                                                  m)) {} r))
+                    core-mappings (apply dissoc (get-in (env/deref-env) [:namespaces 'cljs.core :mappings]) excludes)
+                    core-macro-mappings (apply dissoc (core-macros) excludes)
+                    js-namespaces (reduce (fn [m ns] (assoc m ns {:ns ns :js-namespace true})) {} (set (keys requires)))
+                    ;; should resolve bindings
+                    mappings (reduce-kv (fn [m k v] (assoc m k {:op   (if (js-namespaces v) :js-var :var)
+                                                               :name k
+                                                               :ns   v})) {} uses)
+                    macro-mappings (reduce-kv (fn [m k v]
+                                                (let [macro (ns-resolve v k)]
+                                                  (if (:macro (meta macro))
+                                                    (assoc m k macro)
+                                                    m))) {} uses)
+                    defs (reduce-kv (fn [m k v]
+                                      (assoc m k {:op   :var
+                                                  :name (vary-meta k merge (select-keys v #{:protocol-impl}))
+                                                  :ns   name})) {} defs)]
+                (merge m js-namespaces
+                       {name {:ns             name
+                              :mappings       (merge imports core-mappings mappings defs)
+                              :macro-mappings (merge core-macro-mappings macro-mappings)
+                              :aliases        (parse-requires requires)
+                              :macro-aliases  (parse-requires require-macros)}})))
+            (vals @(cljs.ana/namespaces)))))
 
 (setup-rt!)
