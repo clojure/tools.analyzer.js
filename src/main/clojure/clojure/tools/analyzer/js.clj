@@ -547,10 +547,9 @@
       (reset! core-env (select-keys (:namespaces (env/deref-env)) '[cljs.core cljs.user])))))
 
 (defn cljs-env->env []
-  (throw (Exception. "not implemented"))
   (reduce (fn [m {:keys [name excludes uses requires use-macros require-macros imports defs]}]
             (let [imports (reduce-kv (fn [m k v]
-                                       (assoc m k (let [s (s/split (name v) #"\.")]
+                                       (assoc m k (let [s (s/split (c.c/name v) #"\.")]
                                                     {:op   :js-var
                                                      :ns   (symbol (s/join "." (butlast s)))
                                                      :name (symbol (last s))}))) {} imports)
@@ -560,18 +559,22 @@
                   core-mappings (apply dissoc (get-in (env/deref-env) [:namespaces 'cljs.core :mappings]) excludes)
                   core-macro-mappings (apply dissoc (core-macros) excludes)
                   js-namespaces (reduce (fn [m ns] (assoc m ns {:ns ns :js-namespace true})) {} (set (keys requires)))
-                  mappings (reduce-kv (fn [m k v] {:op   (if (js-namespaces v) :js-var :var)
-                                                  :name k
-                                                  :ns   v}) uses)
+                  ;; should resolve bindings
+                  mappings (reduce-kv (fn [m k v] (assoc m k {:op   (if (js-namespaces v) :js-var :var)
+                                                             :name k
+                                                             :ns   v})) {} uses)
                   macro-mappings (reduce-kv (fn [m k v]
                                               (let [macro (ns-resolve v k)]
                                                 (if (:macro (meta macro))
                                                   (assoc m k macro)
-                                                  m))) uses)]
-              ;; todo defs
+                                                  m))) {} uses)
+                  defs (reduce-kv (fn [m k v]
+                                    (assoc m k {:op   :var
+                                                :name (vary-meta k merge (select-keys v #{:protocol-impl}))
+                                                :ns   name})) {} defs)]
               (merge m js-namespaces
                      {name {:ns             name
-                            :mappings       (merge imports core-mappings mappings)
+                            :mappings       (merge imports core-mappings mappings defs)
                             :macro-mappings (merge core-macro-mappings macro-mappings)
                             :aliases        (parse-requires requires)
                             :macro-aliases  (parse-requires require-macros)}})))
