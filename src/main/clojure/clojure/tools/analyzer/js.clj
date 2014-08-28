@@ -392,7 +392,7 @@
         [metadata & args]  (if (map? (first args))
                              args
                              (cons {} args))
-
+        name (vary-meta name merge metadata)
         ns-opts (doto (desugar-ns-specs args form env)
                   (validate-ns-specs form env)
                   (populate-env name env))]
