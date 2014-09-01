@@ -1,0 +1,300 @@
+<html>
+  <head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <title>js - Javascript-specific passes for tools.analyzer 0.1.0 API documentation</title>
+    <link href="static/favicon.png" rel="icon" />
+    <link href="static/favicon.png" rel="shortcut icon" />
+    <link media="all" type="text/css" href="static/clojure.css" rel="stylesheet" />
+    <link media="all" type="text/css" href="static/wiki.css" rel="stylesheet" />
+    <link media="all" type="text/css" href="static/internal.css" rel="stylesheet" />
+    <style>.menuWrapper{height: 36px;}</style>
+  </head>
+<!--
+This document was auto-generated from the source by the clojure autodoc system.
+To report errors or ask questions about the overall documentation structure, formatting,
+etc., contact Tom Faulhaber (google mail name: tomfaulhaber).
+For errors in the documentation of a particular namespace, contact the author of that
+namespace.
+-->
+  <body>
+    <div id="AllContentContainer">
+      <div id="Header">
+	<a id="Logo" href="index.html"><img alt="Clojure" height="100" width="100" src="static/clojure-icon.gif" /></a>
+	<h1><a title="page header title" id="page-header" href="index.html">tools.analyzer.js API Reference</a></h1>
+      </div>
+      <div id="leftcolumn"><div style="text-align: center;"></div>
+<div class="menu">
+  <div class="WikiCustomNav WikiElement wiki">
+    <span class="toc-header"><span id="project-name">Javascript-specific passes for tools.analyzer</span> <span id="version">0.1.0</span> API</span><br />
+    <ul>
+      <li><a class="wiki_link" href="index.html">Overview</a></li>
+      <li><a class="wiki_link" href="api-index.html">API Index</a></li>
+    </ul>
+    <div class="NamespaceTOC">
+      <span class="toc-header">Namespaces</span>
+      <ul id="left-sidebar-list">
+        <li><a href="js-api.html" class="wiki_link">js</a></li><li><a href="passes.js.analyze-host-expr-api.html" class="wiki_link">passes.js.analyze-host-expr</a></li><li><a href="passes.js.annotate-tag-api.html" class="wiki_link">passes.js.annotate-tag</a></li><li><a href="passes.js.collect-keywords-api.html" class="wiki_link">passes.js.collect-keywords</a></li><li><a href="passes.js.emit-form-api.html" class="wiki_link">passes.js.emit-form</a></li><li><a href="passes.js.infer-tag-api.html" class="wiki_link">passes.js.infer-tag</a></li><li><a href="passes.js.validate-api.html" class="wiki_link">passes.js.validate</a></li>
+      </ul>
+    </div>
+    
+    <a href="http://clojure.org" class="wiki_link">Clojure Home</a>
+  </div>
+</div>
+</div>
+      <div id="rightcolumn">
+	<div id="Content">
+	  <div class="contentBox"><div class="innerContentBox">
+              <div id="content_view" class="wiki wikiPage">
+                <div id="right-sidebar"><div id="toc">
+  <h1 class="nopad">Table of Contents</h1>
+  <div style="margin-left: 1em;" class="toc-section">
+    <a href="#toc0" style="margin-top: 3px;">Overview</a>
+    
+  </div><div style="margin-left: 1em;" class="toc-section">
+    <a href="#" style="margin-top: 3px;"></a>
+    
+  </div><div style="margin-left: 1em;" class="toc-section">
+    <a href="#" style="margin-top: 3px;"></a>
+    
+  </div><div style="margin-left: 1em;" class="toc-section">
+    <a href="#var-section" style="margin-top: 3px;">Vars and Functions</a>
+    <div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.tools.analyzer.js/analyze">analyze</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.tools.analyzer.js/analyze'">analyze'</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.tools.analyzer.js/analyze-ns">analyze-ns</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.tools.analyzer.js/backup-env">backup-env</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.tools.analyzer.js/cljs-env-&gt;env">cljs-env-&gt;env</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.tools.analyzer.js/create-var">create-var</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.tools.analyzer.js/empty-env">empty-env</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.tools.analyzer.js/parse">parse</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.tools.analyzer.js/restore-env">restore-env</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.tools.analyzer.js/run-passes">run-passes</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.tools.analyzer.js/setup-rt!">setup-rt!</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.tools.analyzer.js/specials">specials</a>
+      
+    </div>
+  </div>
+</div>
+</div>
+                <div id="content-tag"><h1 id="overview">API for <span id="js">js</span>
+  - <span id="header-project">Javascript-specific passes for tools.analyzer</span> <span id="header-version">0.1.0</span><span id="header-status-block"> (<span id="header-status">in development</span>)</span>
+  </h1>
+
+<br />Full namespace name: <span id="long-name">clojure.tools.analyzer.js</span>
+<p></p>
+<h2>Overview</h2>
+
+<pre id="namespace-docstr">Analyzer for clojurescript code, extends tools.analyzer with JS specific passes/forms</pre>
+
+
+<br />
+
+
+
+<div id="var-section">
+  <p></p>
+  <h2>Public Variables and Functions</h2>
+  <div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.tools.analyzer.js/analyze">analyze</h2>
+    <span id="var-type">function</span><br />
+    <pre id="var-usage">Usage: (analyze form)
+       (analyze form env)
+       (analyze form env opts)
+</pre>
+    <pre id="var-docstr">Returns an AST for the form.
+
+Binds tools.analyzer/{macroexpand-1,create-var,parse} to
+tools.analyzer.js/{macroexpand-1,create-var,parse} and analyzes the form.
+
+If provided, opts should be a map of options to analyze, currently the only valid
+options are :bindings and :passes-opts.
+If provided, :bindings should be a map of Var-&gt;value pairs that will be merged into the
+default bindings for tools.analyzer, useful to provide custom extension points.
+If provided, :passes-opts should be a map of pass-name-kw-&gt;pass-config-map pairs that
+can be used to configure the behaviour of each pass.
+
+E.g.
+(analyze form env {:bindings  {#'ana/macroexpand-1 my-mexpand-1}})
+
+Calls `run-passes` on the AST.</pre>
+    
+    
+    <a href="https://github.com/clojure/tools.analyzer.js/blob/ca2be3b9794d7f8efeb15eefb97fd626ece83710/src/main/clojure/clojure/tools/analyzer/js.clj#L452" id="var-source">Source</a>
+  </div><div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.tools.analyzer.js/analyze'">analyze'</h2>
+    <span id="var-type">function</span><br />
+    <pre id="var-usage">Usage: (analyze' form)
+       (analyze' form env)
+       (analyze' form env opts)
+</pre>
+    <pre id="var-docstr">Like `analyze` but runs cleanup on the AST</pre>
+    
+    
+    <a href="https://github.com/clojure/tools.analyzer.js/blob/ca2be3b9794d7f8efeb15eefb97fd626ece83710/src/main/clojure/clojure/tools/analyzer/js.clj#L486" id="var-source">Source</a>
+  </div><div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.tools.analyzer.js/analyze-ns">analyze-ns</h2>
+    <span id="var-type">function</span><br />
+    <pre id="var-usage">Usage: (analyze-ns ns)
+</pre>
+    <pre id="var-docstr">Analyzes a whole namespace, returns a vector of the ASTs for all the
+top-level ASTs of that namespace.</pre>
+    
+    
+    <a href="https://github.com/clojure/tools.analyzer.js/blob/ca2be3b9794d7f8efeb15eefb97fd626ece83710/src/main/clojure/clojure/tools/analyzer/js.clj#L493" id="var-source">Source</a>
+  </div><div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.tools.analyzer.js/backup-env">backup-env</h2>
+    <span id="var-type">function</span><br />
+    <pre id="var-usage">Usage: (backup-env)
+</pre>
+    <pre id="var-docstr">Caches the current namespaces state in a resource file, can be restored with
+(restore-env)</pre>
+    
+    
+    <a href="https://github.com/clojure/tools.analyzer.js/blob/ca2be3b9794d7f8efeb15eefb97fd626ece83710/src/main/clojure/clojure/tools/analyzer/js.clj#L525" id="var-source">Source</a>
+  </div><div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.tools.analyzer.js/cljs-env-&gt;env">cljs-env-&gt;env</h2>
+    <span id="var-type">function</span><br />
+    <pre id="var-usage">Usage: (cljs-env-&gt;env)
+</pre>
+    <pre id="var-docstr">Converts the namespace map of the current cljs environment in a tools.analyzer.js
+namespace map and returns it.</pre>
+    
+    
+    <a href="https://github.com/clojure/tools.analyzer.js/blob/ca2be3b9794d7f8efeb15eefb97fd626ece83710/src/main/clojure/clojure/tools/analyzer/js.clj#L557" id="var-source">Source</a>
+  </div><div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.tools.analyzer.js/create-var">create-var</h2>
+    <span id="var-type">function</span><br />
+    <pre id="var-usage">Usage: (create-var sym {:keys [ns]})
+</pre>
+    <pre id="var-docstr">Creates a var map for sym and returns it.</pre>
+    
+    
+    <a href="https://github.com/clojure/tools.analyzer.js/blob/ca2be3b9794d7f8efeb15eefb97fd626ece83710/src/main/clojure/clojure/tools/analyzer/js.clj#L180" id="var-source">Source</a>
+  </div><div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.tools.analyzer.js/empty-env">empty-env</h2>
+    <span id="var-type">function</span><br />
+    <pre id="var-usage">Usage: (empty-env)
+</pre>
+    <pre id="var-docstr">Returns an empty env map</pre>
+    
+    
+    <a href="https://github.com/clojure/tools.analyzer.js/blob/ca2be3b9794d7f8efeb15eefb97fd626ece83710/src/main/clojure/clojure/tools/analyzer/js.clj#L68" id="var-source">Source</a>
+  </div><div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.tools.analyzer.js/parse">parse</h2>
+    <span id="var-type">multimethod</span><br />
+    <pre id="var-usage">No usage documentation available</pre>
+    <pre id="var-docstr">Extension to tools.analyzer/-parse for CLJS special forms</pre>
+    
+    
+    <a href="https://github.com/clojure/tools.analyzer.js/blob/ca2be3b9794d7f8efeb15eefb97fd626ece83710/src/main/clojure/clojure/tools/analyzer/js.clj#L50" id="var-source">Source</a>
+  </div><div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.tools.analyzer.js/restore-env">restore-env</h2>
+    <span id="var-type">function</span><br />
+    <pre id="var-usage">Usage: (restore-env)
+</pre>
+    <pre id="var-docstr">Uses a cached env to populate the default namespace map</pre>
+    
+    
+    <a href="https://github.com/clojure/tools.analyzer.js/blob/ca2be3b9794d7f8efeb15eefb97fd626ece83710/src/main/clojure/clojure/tools/analyzer/js.clj#L540" id="var-source">Source</a>
+  </div><div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.tools.analyzer.js/run-passes">run-passes</h2>
+    <span id="var-type">dynamic function</span><br />
+    <pre id="var-usage">Usage: (run-passes ast)
+</pre>
+    <pre id="var-docstr">Applies the following passes in the correct order to the AST:
+* uniquify
+* add-binding-atom
+* source-info
+* elide-meta
+* warn-earmuff
+* js.collect-keywords
+* js.annotate-tag
+* js.analyze-host-expr
+* js.infer-tag
+* js.validate</pre>
+    
+    
+    <a href="https://github.com/clojure/tools.analyzer.js/blob/ca2be3b9794d7f8efeb15eefb97fd626ece83710/src/main/clojure/clojure/tools/analyzer/js.clj#L420" id="var-source">Source</a>
+  </div><div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.tools.analyzer.js/setup-rt!">setup-rt!</h2>
+    <span id="var-type">function</span><br />
+    <pre id="var-usage">Usage: (setup-rt!)
+</pre>
+    <pre id="var-docstr">Setups the basic runtime, loading cljs.core and initializing cljs.user</pre>
+    
+    
+    <a href="https://github.com/clojure/tools.analyzer.js/blob/ca2be3b9794d7f8efeb15eefb97fd626ece83710/src/main/clojure/clojure/tools/analyzer/js.clj#L546" id="var-source">Source</a>
+  </div><div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.tools.analyzer.js/specials">specials</h2>
+    <span id="var-type">var</span><br />
+    <pre id="var-usage"></pre>
+    <pre id="var-docstr">Set of the special forms for clojurescript</pre>
+    
+    
+    <a href="https://github.com/clojure/tools.analyzer.js/blob/ca2be3b9794d7f8efeb15eefb97fd626ece83710/src/main/clojure/clojure/tools/analyzer/js.clj#L46" id="var-source">Source</a>
+  </div>
+</div>
+
+
+</div>
+              </div>
+            </div>
+          </div>
+	</div>
+	<div id="foot">
+	  <div style="text-align: center;" id="copyright">Copyright 2007-2014 by Rich Hickey and the various contributors</div>
+	</div>
+      </div>
+      <div id="DesignedBy">Logo &amp; site design by <a title="Visit Tom Hickey's website." href="http://www.tomhickey.com">Tom Hickey</a>.<br />
+      Clojure auto-documentation system by Tom Faulhaber.</div>
+    </div>
+    <!-- /AllContentContainer -->
+  </body>
+
+</html>
