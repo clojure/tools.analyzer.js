@@ -75,17 +75,17 @@
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>tools.analyzer</artifactId>
-      <version>0.5.2-SNAPSHOT</version>
+      <version>0.5.3</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>tools.reader</artifactId>
-      <version>0.8.5</version>
+      <version>0.8.8</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojurescript</artifactId>
-      <version>0.0-2311</version>
+      <version>0.0-2322</version>
     </dependency>
   </dependencies>
 
