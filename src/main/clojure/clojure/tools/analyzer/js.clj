@@ -73,9 +73,16 @@
    :ns         *ns*})
 
 (defn fix-ns [ns]
-  (if (= ns "clojure.core")
+  (case ns
+    ("clojure.core" "clojure.tools.analyzer.js.cljs.core")
     "cljs.core"
     ns))
+
+(defn fix-ns-macro [ns]
+  (let [ns (fix-ns ns)]
+    (if (= "cljs.core" ns)
+      "clojure.tools.analyzer.js.cljs.core"
+      ns)))
 
 (defn fix-symbol [sym]
   (symbol (fix-ns (namespace sym)) (name sym)))
@@ -91,7 +98,7 @@
          (c.c/ns-resolve ns sym))))
 
 (defn maybe-macro [sym {:keys [ns]}]
-  (let [var (if-let [sym-ns (fix-ns (namespace sym))]
+  (let [var (if-let [sym-ns (fix-ns-macro (namespace sym))]
               (if-let [full-ns (get-in (env/deref-env)
                                        [:namespaces ns :macro-aliases (symbol sym-ns)])]
                 (ns-resolve full-ns (name sym))
@@ -340,7 +347,7 @@
                (if (:macro (meta v))
                  (assoc m k v)
                  m))
-             {} (ns-interns 'cljs.core)))
+             {} (ns-interns 'clojure.tools.analyzer.js.cljs.core)))
 
 (defn populate-env
   [{:keys [import require require-macros refer-clojure]} ns-name env]
@@ -378,7 +385,6 @@
             :macro-mappings (merge core-macro-mappings macro-mappings)
             :macro-aliases  macro-aliases})))
 
-;;TODO: check for circular deps, handle js deps
 (defmethod parse 'ns
   [[_ name & args :as form] env]
   (when-not (symbol? name)
@@ -546,7 +552,7 @@
 (defn setup-rt!
   "Setups the basic runtime, loading cljs.core and initializing cljs.user"
   []
-  (require 'cljs.core)
+  (require 'clojure.tools.analyzer.js.cljs.core)
   (when-not (or (seq @core-env)
                 (seq (restore-env)))
     (env/with-env (global-env)
@@ -571,7 +577,7 @@
                     core-mappings (apply dissoc (get-in (env/deref-env) [:namespaces 'cljs.core :mappings]) excludes)
                     core-macro-mappings (apply dissoc (core-macros) excludes)
                     js-namespaces (reduce (fn [m ns] (assoc m ns {:ns ns :js-namespace true})) {} (set (keys requires)))
-                    ;; should resolve bindings
+
                     mappings (reduce-kv (fn [m k v] (assoc m k {:op   (if (js-namespaces v) :js-var :var)
                                                                :name k
                                                                :ns   v})) {} uses)
