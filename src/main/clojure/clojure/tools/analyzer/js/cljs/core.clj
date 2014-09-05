@@ -662,7 +662,10 @@
   (symbol (core/str "-" sym)))
 
 (defn resolved-name [{:keys [ns] :as env} sym]
-  (let [sym-ns (namespace sym)]
+  (let [sym-ns (namespace sym)
+        sym-ns (if (= "clojure.tools.analyzer.js.cljs.core" sym-ns)
+                 "cljs.core"
+                 sym-ns)]
     (cond
      (= 'Object sym)
      'Object
