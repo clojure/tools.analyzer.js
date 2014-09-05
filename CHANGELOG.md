@@ -1,5 +1,8 @@
 Changelog
 ========================================
+* Release 0.1.0-beta4 on 05 Sep 2014
+  * Added cljs-env->env
+  * Preserve metadata on 'ns
 * Release 0.1.0-beta3 on 11 Aug 2014
   * Added :passes-opts to analyze
   * Add :js-var node instead of desugaring js interop symbol syntax into js* + field access

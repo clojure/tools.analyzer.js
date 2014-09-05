@@ -10,6 +10,7 @@ Provides js-specific passes for tools.analyzer
 * [License](#license)
 
 ## Example Usage
+
 ```clojure
 user> (require '[clojure.tools.analyzer.js :as a]
                '[clojure.tools.analyzer.env :as env)
@@ -31,13 +32,20 @@ user> (env/with-env env (a/analyze-ns 'cljs.core))
  ..]
 ```
 
+If `clojure.tools.analyzer.js` is used inside a cljs macro being expanded by `cljs.analyzer`, you can use `cljs-env->env` to populate tools.analyzer.js' global env from clojure.analyzer's one:
+```clojure
+clojure.tools.analyzer.js> (env/ensure (env/with-env (merge (env/deref-env)
+                                                            {:namespaces (cljs-env->env)}))
+                                       ..)
+```
+
 [AST Quickref](http://clojure.github.io/tools.analyzer.js/spec/quickref.html)
 ========================================
 
 Releases and Dependency Information
 ========================================
 
-Latest stable release: 0.1.0-beta3
+Latest stable release: 0.1.0-beta4
 
 * [All Released Versions](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.clojure%22%20AND%20a%3A%22tools.analyzer.js%22)
 
@@ -46,7 +54,7 @@ Latest stable release: 0.1.0-beta3
 [Leiningen](https://github.com/technomancy/leiningen) dependency information:
 
 ```clojure
-[org.clojure/tools.analyzer.js "0.1.0-beta3"]
+[org.clojure/tools.analyzer.js "0.1.0-beta4"]
 ```
 [Maven](http://maven.apache.org/) dependency information:
 
@@ -54,7 +62,7 @@ Latest stable release: 0.1.0-beta3
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>tools.analyzer.js</artifactId>
-  <version>0.1.0-beta3</version>
+  <version>0.1.0-beta4</version>
 </dependency>
 ```
 
