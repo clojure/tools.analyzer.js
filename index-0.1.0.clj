@@ -42,7 +42,7 @@
    :name "clojure.tools.analyzer.passes.js.validate",
    :doc nil}
   {:source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js/js.cljs.core-api.html",
    :name "clojure.tools.analyzer.js.cljs.core",
@@ -316,23 +316,23 @@
    :name "amap",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1448",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1451",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/amap",
    :doc
    "Maps an expression across an array a, using an index named idx, and\nreturn value named ret, initialized to a clone of a, then setting\neach element of ret to the evaluation of expr, returning the new\narray ret.",
    :var-type "macro",
-   :line 1448,
+   :line 1451,
    :file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj"}
   {:arglists ([] [x] [x & next]),
    :name "and",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L239",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L239",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/and",
    :doc
@@ -344,120 +344,120 @@
    :name "areduce",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1463",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1466",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/areduce",
    :doc
    "Reduces an expression across an array a, using an index named idx,\nand return value named ret, initialized to init, setting ret to the\nevaluation of expr at each step, returning ret.",
    :var-type "macro",
-   :line 1463,
+   :line 1466,
    :file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj"}
   {:arglists ([x] [x message]),
    :name "assert",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1186",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1189",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/assert",
    :doc
    "Evaluates expr and throws an exception if it does not evaluate to\nlogical true.",
    :var-type "macro",
-   :line 1186,
+   :line 1189,
    :file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj"}
   {:arglists ([bindings & body]),
    :name "binding",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1072",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1075",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/binding",
    :doc
    "binding => var-symbol init-expr\n\nCreates new bindings for the (already-existing) vars, with the\nsupplied initial values, executes the exprs in an implicit do, then\nre-establishes the bindings that existed before.  The new bindings\nare made in parallel (unlike let); all init-exprs are evaluated\nbefore the vars are bound to their new values.",
    :var-type "macro",
-   :line 1072,
+   :line 1075,
    :file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj"}
   {:arglists ([pred expr & clauses]),
    :name "condp",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1085",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1088",
    :added "1.0",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/condp",
    :doc
    "Takes a binary predicate, an expression, and a set of clauses.\nEach clause can take the form of either:\n\ntest-expr result-expr\n\ntest-expr :>> result-fn\n\nNote :>> is an ordinary keyword.\n\nFor each clause, (pred test-expr expr) is evaluated. If it returns\nlogical true, the clause is a match. If a binary clause matches, the\nresult-expr is returned, if a ternary clause matches, its result-fn,\nwhich must be a unary function, is called with the result of the\npredicate as its argument, the result of that call being the return\nvalue of condp. A single default expression can follow the clauses,\nand its value will be returned if no clause matches. If no default\nexpression is provided and no clause matches, an\nIllegalArgumentException is thrown.",
    :var-type "macro",
-   :line 1085,
+   :line 1088,
    :file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj"}
   {:arglists ([multifn dispatch-val & fn-tail]),
    :name "defmethod",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1541",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1544",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/defmethod",
    :doc
    "Creates and installs a new method of multimethod associated with dispatch-value. ",
    :var-type "macro",
-   :line 1541,
+   :line 1544,
    :file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj"}
   {:arglists ([mm-name & options]),
    :name "defmulti",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1498",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1501",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/defmulti",
    :doc
    "Creates a new multimethod with the associated dispatch function.\nThe docstring and attribute-map are optional.\n\nOptions are key-value pairs and may be one of:\n  :default    the default dispatch value, defaults to :default\n  :hierarchy  the isa? hierarchy to use for dispatching\n              defaults to the global hierarchy",
    :var-type "macro",
-   :line 1498,
+   :line 1501,
    :file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj"}
   {:arglists ([seq-exprs & body]),
    :name "doseq",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1287",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1290",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/doseq",
    :doc
    "Repeatedly executes body (presumably for side-effects) with\nbindings and filtering as provided by \"for\".  Does not retain\nthe head of the sequence. Returns nil.",
    :var-type "macro",
-   :line 1287,
+   :line 1290,
    :file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj"}
   {:arglists ([bindings & body]),
    :name "dotimes",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1474",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1477",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/dotimes",
    :doc
    "bindings => name n\n\nRepeatedly executes body (presumably for side-effects) with name\nbound to integers from 0 through n-1.",
    :var-type "macro",
-   :line 1474,
+   :line 1477,
    :file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj"}
   {:file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L194",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L194",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/fast-path-protocol-partitions-count",
    :namespace "clojure.tools.analyzer.js.cljs.core",
@@ -467,9 +467,9 @@
    :name "fast-path-protocol-partitions-count"}
   {:file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L178",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L178",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/fast-path-protocols",
    :namespace "clojure.tools.analyzer.js.cljs.core",
@@ -481,50 +481,50 @@
    :name "for",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1200",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1203",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/for",
    :doc
    "List comprehension. Takes a vector of one or more\n binding-form/collection-expr pairs, each followed by zero or more\n modifiers, and yields a lazy sequence of evaluations of expr.\n Collections are iterated in a nested fashion, rightmost fastest,\n and nested coll-exprs can refer to bindings created in prior\n binding-forms.  Supported modifiers are: :let [binding-form expr ...],\n :while test, :when test.\n\n(take 100 (for [x (range 100000000) y (range 1000000) :while (< y x)]  [x y]))",
    :var-type "macro",
-   :line 1200,
+   :line 1203,
    :file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj"}
   {:arglists ([psym x]),
    :name "implements?",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1002",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1005",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/implements?",
    :doc "EXPERIMENTAL",
    :var-type "macro",
-   :line 1002,
+   :line 1005,
    :file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj"}
   {:arglists ([& colls]),
    :name "lazy-cat",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1610",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1613",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/lazy-cat",
    :doc
    "Expands to code which yields a lazy sequence of the concatenation\nof the supplied colls.  Each coll expr is not evaluated until it is\nneeded.\n\n(lazy-cat xs ys zs) === (concat (lazy-seq xs) (lazy-seq ys) (lazy-seq zs))",
    :var-type "macro",
-   :line 1610,
+   :line 1613,
    :file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj"}
   {:arglists ([bindings & body]),
    :name "let",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L142",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L142",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/let",
    :doc
@@ -536,9 +536,9 @@
    :name "loop",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L154",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L154",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/loop",
    :doc
@@ -550,9 +550,9 @@
    :name "or",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L257",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L257",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/or",
    :doc
@@ -564,14 +564,14 @@
    :name "satisfies?",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1020",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1023",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/satisfies?",
    :doc "Returns true if x satisfies the protocol",
    :var-type "macro",
-   :line 1020,
+   :line 1023,
    :file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj"}
   {:arglists
    ([bindings
@@ -582,23 +582,23 @@
    :name "simple-benchmark",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1554",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1557",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/simple-benchmark",
    :doc
    "Runs expr iterations times in the context of a let expression with\nthe given bindings, then prints out the bindings and the expr\nfollowed by number of iterations and total time. The optional\nargument print-fn, defaulting to println, sets function used to\nprint the result. expr's string representation will be produced\nusing pr-str in any case.",
    :var-type "macro",
-   :line 1554,
+   :line 1557,
    :file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj"}
   {:arglists ([name & body]),
    :name "this-as",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L655",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L655",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/this-as",
    :doc
@@ -610,41 +610,41 @@
    :name "time",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1546",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1549",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/time",
    :doc
    "Evaluates expr and prints the time it took. Returns the value of expr.",
    :var-type "macro",
-   :line 1546,
+   :line 1549,
    :file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj"}
   {:arglists ([& body]),
    :name "with-out-str",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1600",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1603",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/with-out-str",
    :doc
    "Evaluates exprs in a context in which *print-fn* is bound to .append\non a fresh StringBuffer.  Returns the string created by any nested\nprinting calls.",
    :var-type "macro",
-   :line 1600,
+   :line 1603,
    :file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj"}
   {:arglists ([bindings & body]),
    :name "with-redefs",
    :namespace "clojure.tools.analyzer.js.cljs.core",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1050",
+   "https://github.com/clojure/tools.analyzer.js/blob/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj#L1053",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/7e6d433d923a41b842fc65db64a2b8b51dbe7a85/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/36eb175981d28b364e974d335b738caf0c85f3e4/src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js.cljs.core/with-redefs",
    :doc
    "binding => var-symbol temp-value-expr\n\nTemporarily redefines vars while executing the body.  The\ntemp-value-exprs will be evaluated and each resulting value will\nreplace in parallel the root value of its var.  After the body is\nexecuted, the root values of all the vars will be set back to their\nold values. Useful for mocking out functions during testing.",
    :var-type "macro",
-   :line 1050,
+   :line 1053,
    :file "src/main/clojure/clojure/tools/analyzer/js/cljs/core.clj"})}
