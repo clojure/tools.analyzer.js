@@ -576,7 +576,7 @@
                                                                   m)) {} r))
                     core-mappings (apply dissoc (get-in (env/deref-env) [:namespaces 'cljs.core :mappings]) excludes)
                     core-macro-mappings (apply dissoc (core-macros) excludes)
-                    js-namespaces (reduce (fn [m ns] (assoc m ns {:ns ns :js-namespace true})) {} (set (keys requires)))
+                    js-namespaces (reduce (fn [m ns] (assoc m ns {:ns ns :js-namespace true})) {} (set (vals requires)))
 
                     mappings (reduce-kv (fn [m k v] (assoc m k {:op   (if (js-namespaces v) :js-var :var)
                                                                :name k
@@ -596,6 +596,6 @@
                               :macro-mappings (merge core-macro-mappings macro-mappings)
                               :aliases        (parse-requires requires)
                               :macro-aliases  (parse-requires require-macros)}})))
-            (vals @(cljs.ana/namespaces)))))
+            {} (vals @cljs.ana/namespaces))))
 
 (setup-rt!)
