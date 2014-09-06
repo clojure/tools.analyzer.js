@@ -292,6 +292,8 @@
         test-expr (-analyze test expr-env)
         nodes (mapv (fn [tests then]
                       {:op       :case-node
+                       ;; no :form, this is a synthetic grouping node
+                       :env      env
                        :tests    (mapv (fn [test]
                                          {:op       :case-test
                                           :form     test
@@ -299,10 +301,10 @@
                                           :test     (-analyze test expr-env)
                                           :children [:test]})
                                        tests)
-                       :then     {:op   :case-then
+                       :then     {:op       :case-then
                                   :form     test
                                   :env      env
-                                  :then (-analyze then env)
+                                  :then     (-analyze then env)
                                   :children [:then]}
                        :children [:tests :then]})
                     tests thens)
