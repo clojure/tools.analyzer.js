@@ -1,6 +1,6 @@
 {:namespaces
  ({:source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/blob/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj",
    :wiki-url "http://clojure.github.com/tools.analyzer.js/js-api.html",
    :name "clojure.tools.analyzer.js",
    :doc
@@ -52,78 +52,78 @@
    :name "analyze",
    :namespace "clojure.tools.analyzer.js",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj#L458",
+   "https://github.com/clojure/tools.analyzer.js/blob/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj#L460",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js/analyze",
    :doc
    "Returns an AST for the form.\n\nBinds tools.analyzer/{macroexpand-1,create-var,parse} to\ntools.analyzer.js/{macroexpand-1,create-var,parse} and analyzes the form.\n\nIf provided, opts should be a map of options to analyze, currently the only valid\noptions are :bindings and :passes-opts.\nIf provided, :bindings should be a map of Var->value pairs that will be merged into the\ndefault bindings for tools.analyzer, useful to provide custom extension points.\nIf provided, :passes-opts should be a map of pass-name-kw->pass-config-map pairs that\ncan be used to configure the behaviour of each pass.\n\nE.g.\n(analyze form env {:bindings  {#'ana/macroexpand-1 my-mexpand-1}})\n\nCalls `run-passes` on the AST.",
    :var-type "function",
-   :line 458,
+   :line 460,
    :file "src/main/clojure/clojure/tools/analyzer/js.clj"}
   {:arglists ([form] [form env] [form env opts]),
    :name "analyze'",
    :namespace "clojure.tools.analyzer.js",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj#L492",
+   "https://github.com/clojure/tools.analyzer.js/blob/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj#L494",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js/analyze'",
    :doc "Like `analyze` but runs cleanup on the AST",
    :var-type "function",
-   :line 492,
+   :line 494,
    :file "src/main/clojure/clojure/tools/analyzer/js.clj"}
   {:arglists ([ns]),
    :name "analyze-ns",
    :namespace "clojure.tools.analyzer.js",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj#L499",
+   "https://github.com/clojure/tools.analyzer.js/blob/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj#L501",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js/analyze-ns",
    :doc
    "Analyzes a whole namespace, returns a vector of the ASTs for all the\ntop-level ASTs of that namespace.",
    :var-type "function",
-   :line 499,
+   :line 501,
    :file "src/main/clojure/clojure/tools/analyzer/js.clj"}
   {:arglists ([]),
    :name "backup-env",
    :namespace "clojure.tools.analyzer.js",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj#L531",
+   "https://github.com/clojure/tools.analyzer.js/blob/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj#L533",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js/backup-env",
    :doc
    "Caches the current namespaces state in a resource file, can be restored with\n(restore-env)",
    :var-type "function",
-   :line 531,
+   :line 533,
    :file "src/main/clojure/clojure/tools/analyzer/js.clj"}
   {:arglists ([]),
    :name "cljs-env->env",
    :namespace "clojure.tools.analyzer.js",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj#L563",
+   "https://github.com/clojure/tools.analyzer.js/blob/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj#L565",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js/cljs-env->env",
    :doc
    "Converts the namespace map of the current cljs environment in a tools.analyzer.js\nnamespace map and returns it.",
    :var-type "function",
-   :line 563,
+   :line 565,
    :file "src/main/clojure/clojure/tools/analyzer/js.clj"}
   {:arglists ([sym {:keys [ns]}]),
    :name "create-var",
    :namespace "clojure.tools.analyzer.js",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj#L187",
+   "https://github.com/clojure/tools.analyzer.js/blob/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj#L187",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js/create-var",
    :doc "Creates a var map for sym and returns it.",
@@ -134,9 +134,9 @@
    :name "empty-env",
    :namespace "clojure.tools.analyzer.js",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj#L68",
+   "https://github.com/clojure/tools.analyzer.js/blob/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj#L68",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js/empty-env",
    :doc "Returns an empty env map",
@@ -145,9 +145,9 @@
    :file "src/main/clojure/clojure/tools/analyzer/js.clj"}
   {:file "src/main/clojure/clojure/tools/analyzer/js.clj",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj#L50",
+   "https://github.com/clojure/tools.analyzer.js/blob/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj#L50",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js/parse",
    :namespace "clojure.tools.analyzer.js",
@@ -159,49 +159,49 @@
    :name "restore-env",
    :namespace "clojure.tools.analyzer.js",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj#L546",
+   "https://github.com/clojure/tools.analyzer.js/blob/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj#L548",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js/restore-env",
    :doc "Uses a cached env to populate the default namespace map",
    :var-type "function",
-   :line 546,
+   :line 548,
    :file "src/main/clojure/clojure/tools/analyzer/js.clj"}
   {:arglists ([ast]),
    :name "run-passes",
    :namespace "clojure.tools.analyzer.js",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj#L426",
+   "https://github.com/clojure/tools.analyzer.js/blob/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj#L428",
    :dynamic true,
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js/run-passes",
    :doc
    "Applies the following passes in the correct order to the AST:\n* uniquify\n* add-binding-atom\n* source-info\n* elide-meta\n* warn-earmuff\n* js.collect-keywords\n* js.annotate-tag\n* js.analyze-host-expr\n* js.infer-tag\n* js.validate",
    :var-type "function",
-   :line 426,
+   :line 428,
    :file "src/main/clojure/clojure/tools/analyzer/js.clj"}
   {:arglists ([]),
    :name "setup-rt!",
    :namespace "clojure.tools.analyzer.js",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj#L552",
+   "https://github.com/clojure/tools.analyzer.js/blob/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj#L554",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js/setup-rt!",
    :doc
    "Setups the basic runtime, loading cljs.core and initializing cljs.user",
    :var-type "function",
-   :line 552,
+   :line 554,
    :file "src/main/clojure/clojure/tools/analyzer/js.clj"}
   {:file "src/main/clojure/clojure/tools/analyzer/js.clj",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/c2e9952c1af02d534e7897117f681a1333e2b3d3/src/main/clojure/clojure/tools/analyzer/js.clj#L46",
+   "https://github.com/clojure/tools.analyzer.js/blob/3575df799aa23eb164196eccb79da198a2dceb9c/src/main/clojure/clojure/tools/analyzer/js.clj#L46",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js/specials",
    :namespace "clojure.tools.analyzer.js",
