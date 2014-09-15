@@ -7,7 +7,9 @@
 ;;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.tools.analyzer.passes.js.emit-form
-  (:require [clojure.tools.analyzer.passes.emit-form :as default]
+  (:require [clojure.tools.analyzer.passes
+             [emit-form :as default]
+             [uniquify :refer [uniquify-locals]]]
             [clojure.string :as s]
             [cljs.tagged-literals :refer [->JSValue]])
   (:import cljs.tagged_literals.JSValue
@@ -28,6 +30,7 @@
    Opts is a set of options, valid options are:
     * :hygienic
     * :qualified-symbols"
+  {:pass-info {:walk :none :depends #{#'uniquify-locals} :compiler true}}
   ([ast] (emit-form ast #{}))
   ([ast opts]
      (binding [default/-emit-form* -emit-form*]
@@ -35,6 +38,7 @@
 
 (defn emit-hygienic-form
   "Return an hygienic form represented by the given AST"
+  {:pass-info {:walk :none :depends #{#'uniquify-locals} :compiler true}}
   [ast]
   (binding [default/-emit-form* -emit-form*]
     (-emit-form* ast #{:hygienic})))

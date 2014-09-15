@@ -8,7 +8,11 @@
 
 (ns clojure.tools.analyzer.passes.js.infer-tag
   (:require [clojure.tools.analyzer.env :as env]
-            [clojure.tools.analyzer.utils :refer [arglist-for-arity]]))
+            [clojure.tools.analyzer.utils :refer [arglist-for-arity]]
+            [clojure.tools.analyzer.passes.add-binding-atom :refer [add-binding-atom]]
+            [clojure.tools.analyzer.passes.js
+             [annotate-tag :refer [annotate-tag]]
+             [analyze-host-expr :refer [analyze-host-expr]]]))
 
 (defmulti -infer-tag :op)
 (defmethod -infer-tag :default [ast] ast)
@@ -186,6 +190,7 @@
                  this arglists
    * :ignore-tag true when the node is untyped, does not imply that
                  all untyped node will have this"
+  {:pass-info {:walk :post :depends #{#'analyze-host-expr #'annotate-tag #'add-binding-atom}}}
   [{:keys [tag] :as ast}]
   (merge (-infer-tag ast)
          (when tag

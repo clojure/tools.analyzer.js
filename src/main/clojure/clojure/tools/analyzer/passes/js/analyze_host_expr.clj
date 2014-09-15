@@ -14,6 +14,7 @@
   "Transform :host-interop nodes into :host-call, transform
   :maybe-class or :maybe-host-form nodes resolvable to js vars
   into :js-var nodes"
+  {:pass-info {:walk :any :depends #{}}}
   :op)
 
 (defmethod analyze-host-expr :default [ast] ast)

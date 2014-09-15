@@ -80,6 +80,7 @@
 (defn annotate-tag
   "If the AST node type is a constant object or contains :tag metadata,
    attach the appropriate :tag to the node."
+  {:pass-info {:walk :any :depends #{}}}
   [ast]
   (if-let [tag (or (-> ast :form meta :tag)
                    (-> ast :val meta :tag))]

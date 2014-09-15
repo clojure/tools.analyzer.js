@@ -14,9 +14,10 @@
              :refer [analyze analyze-in-env]
              :rename {analyze -analyze}]
             [clojure.tools.analyzer
-             [utils :refer [resolve-var resolve-ns ctx -source-info dissoc-env const-val]]
+             [utils :refer [resolve-var resolve-ns ctx -source-info dissoc-env const-val mmerge]]
              [ast :refer [prewalk postwalk]]
-             [env :as env :refer [*env*]]]
+             [env :as env :refer [*env*]]
+             [passes :refer [schedule]]]
             [clojure.tools.analyzer.passes
              [source-info :refer [source-info]]
              [cleanup :refer [cleanup]]
@@ -425,37 +426,28 @@
         (assoc-in ast [:meta] (ana/-analyze :const const-map env)))
       ast)))
 
+(def default-passes
+  "Set of passes that will be run by default on the AST by #'run-passes"
+  #{#'warn-earmuff
+
+    #'uniquify-locals
+
+    #'source-info
+    #'elide-meta
+
+    #'collect-keywords
+
+    #'validate
+    #'infer-tag})
+
+(def scheduled-default-passes
+  (schedule default-passes))
+
 (defn ^:dynamic run-passes
-  "Applies the following passes in the correct order to the AST:
-   * uniquify
-   * add-binding-atom
-   * source-info
-   * elide-meta
-   * warn-earmuff
-   * js.collect-keywords
-   * js.annotate-tag
-   * js.analyze-host-expr
-   * js.infer-tag
-   * js.validate"
+  "Function that will be invoked on the AST tree immediately after it has been constructed,
+   by default set-ups and runs the default passes declared in #'default-passes"
   [ast]
-  (-> ast
-
-    uniquify-locals
-    add-binding-atom
-
-    (prewalk (fn [ast]
-               (-> ast
-                 warn-earmuff
-                 source-info
-                 elide-meta
-                 collect-keywords)))
-
-    (postwalk (fn [ast]
-                (-> ast
-                  annotate-tag
-                  analyze-host-expr
-                  infer-tag
-                  validate)))))
+  (scheduled-default-passes ast))
 
 (defn analyze
   "Returns an AST for the form.
@@ -488,7 +480,7 @@
                              {#'*ns* *ns*})
                            (:bindings opts))
        (env/ensure (global-env)
-         (swap! env/*env* merge {:passes-opts (:passes-opts opts)})
+         (swap! env/*env* mmerge {:passes-opts (:passes-opts opts)})
          (run-passes (-analyze form env))))))
 
 (defn analyze'

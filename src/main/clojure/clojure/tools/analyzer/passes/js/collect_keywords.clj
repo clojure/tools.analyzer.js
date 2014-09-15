@@ -7,11 +7,13 @@
 ;;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.tools.analyzer.passes.js.collect-keywords
-  (:require [clojure.tools.analyzer.env :as env]))
+  (:require [clojure.tools.analyzer.env :as env]
+            [clojure.tools.analyzer.passes.elide-meta :refer [elide-meta]]))
 
 (defn collect-keywords
   "Assoc compilation-unit shared id to each :const node with :type :keyword,
    The keyword to id map is available in the global env under ::keywords"
+  {:pass-info {:walk :any :depends #{#'elide-meta}}}
   [ast]
   (if (and (= (:op ast) :const)
            (= (:type ast) :keyword))

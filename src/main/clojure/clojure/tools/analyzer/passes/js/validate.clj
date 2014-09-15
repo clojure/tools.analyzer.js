@@ -9,6 +9,7 @@
 (ns clojure.tools.analyzer.passes.js.validate
   (:require [clojure.tools.analyzer.ast :refer [prewalk]]
             [clojure.tools.analyzer.passes.cleanup :refer [cleanup]]
+            [clojure.tools.analyzer.passes.js.infer-tag :refer [infer-tag]]
             [clojure.tools.analyzer.utils :refer [source-info resolve-var resolve-ns]]))
 
 (defmulti -validate :op)
@@ -57,6 +58,7 @@
 (defn validate
   "Validate tags and symbols.
    Throws exceptions when invalid forms are encountered"
+  {:pass-info {:walk :any :depends #{#'infer-tag}}}
   [ast]
   (merge (-validate ast)
          (when (:tag ast)
