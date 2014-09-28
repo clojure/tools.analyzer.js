@@ -1,6 +1,6 @@
 {:namespaces
  ({:source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/0a7a6e680ecc611a116eef633d50b164a5492b10/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/blob/c4c60dfa53d01225ce72c3c3692b8854c6ca2858/src/main/clojure/clojure/tools/analyzer/js.clj",
    :wiki-url "http://clojure.github.com/tools.analyzer.js/js-api.html",
    :name "clojure.tools.analyzer.js",
    :doc
@@ -52,9 +52,9 @@
    :name "create-var",
    :namespace "clojure.tools.analyzer.js",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/0a7a6e680ecc611a116eef633d50b164a5492b10/src/main/clojure/clojure/tools/analyzer/js.clj#L188",
+   "https://github.com/clojure/tools.analyzer.js/blob/c4c60dfa53d01225ce72c3c3692b8854c6ca2858/src/main/clojure/clojure/tools/analyzer/js.clj#L188",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/0a7a6e680ecc611a116eef633d50b164a5492b10/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/c4c60dfa53d01225ce72c3c3692b8854c6ca2858/src/main/clojure/clojure/tools/analyzer/js.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js/create-var",
    :doc "Creates a var map for sym and returns it.",
@@ -65,9 +65,9 @@
    :name "empty-env",
    :namespace "clojure.tools.analyzer.js",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/0a7a6e680ecc611a116eef633d50b164a5492b10/src/main/clojure/clojure/tools/analyzer/js.clj#L69",
+   "https://github.com/clojure/tools.analyzer.js/blob/c4c60dfa53d01225ce72c3c3692b8854c6ca2858/src/main/clojure/clojure/tools/analyzer/js.clj#L69",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/0a7a6e680ecc611a116eef633d50b164a5492b10/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/c4c60dfa53d01225ce72c3c3692b8854c6ca2858/src/main/clojure/clojure/tools/analyzer/js.clj",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js/empty-env",
    :doc "Returns an empty env map",
@@ -76,9 +76,9 @@
    :file "src/main/clojure/clojure/tools/analyzer/js.clj"}
   {:file "src/main/clojure/clojure/tools/analyzer/js.clj",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/0a7a6e680ecc611a116eef633d50b164a5492b10/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/c4c60dfa53d01225ce72c3c3692b8854c6ca2858/src/main/clojure/clojure/tools/analyzer/js.clj",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/0a7a6e680ecc611a116eef633d50b164a5492b10/src/main/clojure/clojure/tools/analyzer/js.clj#L51",
+   "https://github.com/clojure/tools.analyzer.js/blob/c4c60dfa53d01225ce72c3c3692b8854c6ca2858/src/main/clojure/clojure/tools/analyzer/js.clj#L51",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js/parse",
    :namespace "clojure.tools.analyzer.js",
@@ -88,9 +88,9 @@
    :name "parse"}
   {:file "src/main/clojure/clojure/tools/analyzer/js.clj",
    :raw-source-url
-   "https://github.com/clojure/tools.analyzer.js/raw/0a7a6e680ecc611a116eef633d50b164a5492b10/src/main/clojure/clojure/tools/analyzer/js.clj",
+   "https://github.com/clojure/tools.analyzer.js/raw/c4c60dfa53d01225ce72c3c3692b8854c6ca2858/src/main/clojure/clojure/tools/analyzer/js.clj",
    :source-url
-   "https://github.com/clojure/tools.analyzer.js/blob/0a7a6e680ecc611a116eef633d50b164a5492b10/src/main/clojure/clojure/tools/analyzer/js.clj#L47",
+   "https://github.com/clojure/tools.analyzer.js/blob/c4c60dfa53d01225ce72c3c3692b8854c6ca2858/src/main/clojure/clojure/tools/analyzer/js.clj#L47",
    :wiki-url
    "http://clojure.github.com/tools.analyzer.js//js-api.html#clojure.tools.analyzer.js/specials",
    :namespace "clojure.tools.analyzer.js",
