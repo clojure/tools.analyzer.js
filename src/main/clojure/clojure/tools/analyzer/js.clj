@@ -423,7 +423,7 @@
     (if (and meta (= :map (:op meta)))
       (let [const-map (zipmap (mapv const-val (:keys meta))
                               (mapv const-val (:vals meta)))]
-        (assoc-in ast [:meta] (ana/-analyze :const const-map env)))
+        (assoc-in ast [:meta] (ana/-analyze-const const-map env)))
       ast)))
 
 (def default-passes
