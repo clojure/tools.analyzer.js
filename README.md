@@ -6,6 +6,7 @@ Provides js-specific passes for tools.analyzer
 * [AST Quickref](#ast-quickref)
 * [Releases and Dependency Information](#releases-and-dependency-information)
 * [Changelog](#changelog)
+* [Public API](#public-api)
 * [Developer Information](#developer-information)
 * [License](#license)
 
@@ -69,12 +70,16 @@ Latest stable release: 0.1.0-beta4
 [Changelog](CHANGELOG.md)
 ========================================
 
+API Index
+========================================
+
+* [CrossClj Documentation](http://crossclj.info/doc/org.clojure/tools.analyzer.js/lastest/index.html)
+* [API index](http://clojure.github.io/tools.analyzer.js)
+
 Developer Information
 ========================================
 
 * [GitHub project](https://github.com/clojure/tools.analyzer.js)
-
-* [API index](http://clojure.github.io/tools.analyzer.js)
 
 * [Bug Tracker](http://dev.clojure.org/jira/browse/TANAL)
 
