@@ -6,7 +6,7 @@ Provides js-specific passes for tools.analyzer
 * [AST Quickref](#ast-quickref)
 * [Releases and Dependency Information](#releases-and-dependency-information)
 * [Changelog](#changelog)
-* [Public API](#public-api)
+* [API Index](#api-index)
 * [Developer Information](#developer-information)
 * [License](#license)
 
