@@ -6,6 +6,6 @@
   :source-paths ["src/main/clojure"]
   :test-paths ["src/test/clojure"]
   :dependencies [[org.clojure/clojure "1.7.0-alpha3"]
-                 [org.clojure/tools.analyzer "0.6.3-SNAPSHOT"]
+                 [org.clojure/tools.analyzer "0.6.4-SNAPSHOT"]
                  [org.clojure/tools.reader "0.8.12"]
                  [org.clojure/clojurescript "0.0-2322"]])
