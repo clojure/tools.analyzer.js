@@ -1,5 +1,9 @@
 Changelog
 ========================================
+* Release 0.1.0-beta5 on 23 Nov 2014
+  * Updated supported clojurescript version to lastest
+  * Added :env to :case-node
+  * Started using the new tools.analyzer pass infrastructure
 * Release 0.1.0-beta4 on 05 Sep 2014
   * Added cljs-env->env
   * Preserve metadata on 'ns
