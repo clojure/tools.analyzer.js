@@ -34,6 +34,7 @@
             [clojure.tools.analyzer.js.utils
              :refer [desugar-ns-specs validate-ns-specs ns-resource ns->relpath res-path]]
             [cljs
+             [env :as cljs.env]
              [analyzer :as cljs.ana]
              [tagged-literals :as tags]
              [js-deps :as deps]]
@@ -61,10 +62,11 @@
 (defonce core-env (atom {}))
 
 (defn global-env []
-  (atom {:namespaces          (merge '{goog {:mappings {}, :js-namespace true, :ns goog}
-                                       Math {:mappings {}, :js-namespace true, :ns Math}}
-                                     @core-env)
-         :js-dependency-index (deps/js-dependency-index {})}))
+  (atom (merge (and cljs.env/*compiler* @cljs.env/*compiler*)
+               {:namespaces          (merge '{goog {:mappings {}, :js-namespace true, :ns goog}
+                                              Math {:mappings {}, :js-namespace true, :ns Math}}
+                                            @core-env)
+                :js-dependency-index (deps/js-dependency-index {})})))
 
 (defn empty-env
   "Returns an empty env map"
@@ -179,7 +181,7 @@
                 (if (and (seq? ret)
                          (= 'js* (first ret)))
                   (vary-meta ret merge
-                             (when (-> clj-macro meta :cljs.core/numeric)
+                             (when (-> clj-macro meta :cljs.analyzer/numeric)
                                {:tag 'number}))
                   ret)))
             (with-meta (desugar-host-expr form env) (meta form)))))

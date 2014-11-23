@@ -6,7 +6,7 @@
 ;   the terms of this license.
 ;   You must not remove this notice, or any other, from this software.
 
-(ns cljs.core
+(ns clojure.tools.analyzer.js.cljs.core
   (:refer-clojure :exclude [-> ->> .. amap and areduce alength aclone assert binding bound-fn case comment cond condp
                             declare definline definterface defmethod defmulti defn defn- defonce
                             defprotocol defrecord defstruct deftype delay destructure doseq dosync dotimes doto
@@ -38,7 +38,8 @@
   (:require clojure.walk
             clojure.set
             cljs.compiler
-            [cljs.env :as env]))
+            [clojure.tools.analyzer.env :as env]
+            [clojure.tools.analyzer.utils :as utils]))
 
 (alias 'core 'clojure.core)
 (alias 'ana 'cljs.analyzer)
@@ -236,8 +237,8 @@
 
 (defn simple-test-expr? [env ast]
   (core/and
-    (#{:var :invoke :constant :dot :js} (:op ast))
-    ('#{boolean seq} (cljs.analyzer/infer-tag env ast))))
+   (#{:var :invoke :const :host-field :host-call :js} (:op ast))
+   ('#{boolean seq} (:tag ast))))
 
 (defmacro and
   "Evaluates exprs one at a time, from left to right. If a form
@@ -249,7 +250,7 @@
   ([x & next]
     (let [forms (concat [x] next)]
       (if (every? #(simple-test-expr? &env %)
-            (map #(cljs.analyzer/analyze &env %) forms))
+             (map #(clojure.tools.analyzer.js/analyze % &env) forms))
         (let [and-str (->> (repeat (count forms) "(~{})")
                         (interpose " && ")
                         (apply core/str))]
@@ -267,7 +268,7 @@
   ([x & next]
     (let [forms (concat [x] next)]
       (if (every? #(simple-test-expr? &env %)
-            (map #(cljs.analyzer/analyze &env %) forms))
+             (map #(clojure.tools.analyzer.js/analyze % &env) forms))
         (let [or-str (->> (repeat (count forms) "(~{})")
                         (interpose " || ")
                         (apply core/str))]
@@ -317,7 +318,7 @@
   (bool-expr (core/list 'js* "~{} === false" x)))
 
 (defmacro array? [x]
-  (if (= :nodejs (:target @env/*compiler*))
+  (if (= :nodejs (:target (env/deref-env)))
     (bool-expr `(.isArray js/Array ~x))
     (bool-expr (core/list 'js* "~{} instanceof Array" x))))
 
@@ -327,8 +328,8 @@
 ;; TODO: x must be a symbol, not an arbitrary expression
 (defmacro exists? [x]
   (bool-expr
-    (core/list 'js* "typeof ~{} !== 'undefined'"
-      (vary-meta x assoc :cljs.analyzer/no-resolve true))))
+   (core/list 'js* "typeof ~{} !== 'undefined'"
+              (vary-meta x assoc :analyzer/allow-undefined true))))
 
 (defmacro undefined? [x]
   (bool-expr (core/list 'js* "(void 0 === ~{})" x)))
@@ -632,7 +633,7 @@
         meta-sym (gensym "meta")
         this-sym (gensym "_")
         locals   (keys (:locals &env))
-        ns       (-> &env :ns :name)
+        ns       (-> &env :ns)
         munge    cljs.compiler/munge]
     `(do
        (when-not (exists? ~(symbol (core/str ns) (core/str t)))
@@ -667,30 +668,41 @@
 (defn to-property [sym]
   (symbol (core/str "-" sym)))
 
+(defn resolved-name [{:keys [ns] :as env} sym]
+  (let [sym-ns (namespace sym)
+        sym-ns (if (= "clojure.tools.analyzer.js.cljs.core" sym-ns)
+                 "cljs.core"
+                 sym-ns)]
+    (cond
+     (= 'Object sym)
+     'Object
+
+     (= "js" sym-ns)
+     (symbol (name sym))
+
+     sym-ns
+     (symbol (core/str (utils/resolve-ns (symbol sym-ns) env)) (name sym))
+
+     :else
+     (symbol (core/str ns) (name sym)))))
+
+(def resolve-var resolved-name)
+
+;; TODO
 (defn warn-and-update-protocol [p type env]
   (when-not (= 'Object p)
-    (if-let [var (cljs.analyzer/resolve-existing-var (dissoc env :locals) p)]
+    (if-let [var (utils/resolve-var p (dissoc env :locals))]
       (do
-        (when-not (:protocol-symbol var)
-          (cljs.analyzer/warning :invalid-protocol-symbol env {:protocol p}))
-        (when (core/and (:protocol-deprecated cljs.analyzer/*cljs-warnings*)
-                (-> var :deprecated)
-                (not (-> p meta :deprecation-nowarn)))
-          (cljs.analyzer/warning :protocol-deprecated env {:protocol p}))
-        (when (:protocol-symbol var)
-          (swap! env/*compiler* update-in [:cljs.analyzer/namespaces]
-            (fn [ns]
-              (update-in ns [(:ns var) :defs (symbol (name p)) :impls]
-                conj type)))))
-      (when (:undeclared cljs.analyzer/*cljs-warnings*)
-        (cljs.analyzer/warning :undeclared-protocol-symbol env {:protocol p})))))
-
-(defn resolve-var [env sym]
-  (let [ret (-> (dissoc env :locals)
-              (cljs.analyzer/resolve-var sym)
-              :name)]
-    (assert ret (core/str "Can't resolve: " sym))
-    ret))
+        #_(when-not (:protocol-symbol var)
+            (cljs.analyzer/warning :invalid-protocol-symbol env {:protocol p}))
+        #_(when (core/and (:protocol-deprecated cljs.analyzer/*cljs-warnings*)
+                          (-> var :deprecated)
+                          (not (-> p meta :deprecation-nowarn)))
+            (cljs.analyzer/warning :protocol-deprecated env {:protocol p}))
+        (swap! env/*env* update-in [:namespaces (:ns var) :mappings (symbol (name p))]
+               vary-meta update-in [:impls] conj type))
+      #_(when (:undeclared cljs.analyzer/*cljs-warnings*)
+          (cljs.analyzer/warning :undeclared-protocol-symbol env {:protocol p})))))
 
 (defn ->impl-map [impls]
   (loop [ret {} s impls]
@@ -798,50 +810,51 @@
               (add-proto-methods* pprefix type type-sym sig)))
           sigs)))))
 
-(defn validate-impl-sigs [env p method]
-  (when-not (= p 'Object)
-    (let [var (ana/resolve-var (dissoc env :locals) p)
-          minfo (-> var :protocol-info :methods)
-          [fname sigs] (if (core/vector? (second method))
-                         [(first method) [(second method)]]
-                         [(first method) (map first (rest method))])
-          decmeths (core/get minfo fname ::not-found)]
-      (when (= decmeths ::not-found)
-        (ana/warning :protocol-invalid-method env {:protocol p :fname fname :no-such-method true}))
-      (loop [sigs sigs seen #{}]
-        (when (seq sigs)
-          (let [sig (first sigs)
-                c   (count sig)]
-            (when (contains? seen c)
-              (ana/warning :protocol-duped-method env {:protocol p :fname fname}))
-            (when (core/and (not= decmeths ::not-found) (not (some #{c} (map count decmeths))))
-              (ana/warning :protocol-invalid-method env {:protocol p :fname fname :invalid-arity c}))
-            (recur (next sigs) (conj seen c))))))))
+;; TODO
+#_(defn validate-impl-sigs [env p method]
+    (when-not (= p 'Object)
+      (let [var (ana/resolve-var (dissoc env :locals) p)
+            minfo (-> var :protocol-info :methods)
+            [fname sigs] (if (core/vector? (second method))
+                           [(first method) [(second method)]]
+                           [(first method) (map first (rest method))])
+            decmeths (core/get minfo fname ::not-found)]
+        (when (= decmeths ::not-found)
+          (ana/warning :protocol-invalid-method env {:protocol p :fname fname :no-such-method true}))
+        (loop [sigs sigs seen #{}]
+          (when (seq sigs)
+            (let [sig (first sigs)
+                  c   (count sig)]
+              (when (contains? seen c)
+                (ana/warning :protocol-duped-method env {:protocol p :fname fname}))
+              (when (core/and (not= decmeths ::not-found) (not (some #{c} (map count decmeths))))
+                (ana/warning :protocol-invalid-method env {:protocol p :fname fname :invalid-arity c}))
+              (recur (next sigs) (conj seen c))))))))
 
-(defn validate-impls [env impls]
-  (loop [protos #{} impls impls]
-    (when (seq impls)
-      (let [proto   (first impls)
-            methods (take-while seq? (next impls))
-            impls   (drop-while seq? (next impls))]
-        (when (contains? protos proto)
-          (ana/warning :protocol-multiple-impls env {:protocol proto}))
-        (core/doseq [method methods]
-          (validate-impl-sigs env proto method))
-        (recur (conj protos proto) impls)))))
+#_(defn validate-impls [env impls]
+    (loop [protos #{} impls impls]
+      (when (seq impls)
+        (let [proto   (first impls)
+              methods (take-while seq? (next impls))
+              impls   (drop-while seq? (next impls))]
+          (when (contains? protos proto)
+            (ana/warning :protocol-multiple-impls env {:protocol proto}))
+          (core/doseq [method methods]
+            (validate-impl-sigs env proto method))
+          (recur (conj protos proto) impls)))))
 
 (defmacro extend-type [type-sym & impls]
   (let [env &env
-        _ (validate-impls env impls)
+        #_[_ (validate-impls env impls)]
         resolve (partial resolve-var env)
         impl-map (->impl-map impls)
         [type assign-impls] (if-let [type (base-type type-sym)]
                               [type base-assign-impls]
                               [(resolve type-sym) proto-assign-impls])]
-    (when (core/and (:extending-base-js-type cljs.analyzer/*cljs-warnings*)
-                    (js-base-type type-sym))
-      (cljs.analyzer/warning :extending-base-js-type env
-          {:current-symbol type-sym :suggested-symbol (js-base-type type-sym)}))
+    #_(when (core/and (:extending-base-js-type cljs.analyzer/*cljs-warnings*)
+                      (js-base-type type-sym))
+        (cljs.analyzer/warning :extending-base-js-type env
+                               {:current-symbol type-sym :suggested-symbol (js-base-type type-sym)}))
     `(do ~@(mapcat #(assign-impls env resolve type-sym type %) impl-map))))
 
 (defn- prepare-protocol-masks [env impls]
@@ -891,7 +904,7 @@
 (defn collect-protocols [impls env]
   (->> impls
       (filter core/symbol?)
-      (map #(:name (cljs.analyzer/resolve-var (dissoc env :locals) %)))
+      (map (partial resolved-name env))
       (into #{})))
 
 (defn- build-positional-factory
@@ -904,7 +917,7 @@
 
 (defmacro deftype [t fields & impls]
   (let [env &env
-        r (:name (cljs.analyzer/resolve-var (dissoc env :locals) t))
+        r (resolved-name &env t)
         [fpps pmasks] (prepare-protocol-masks env impls)
         protocols (collect-protocols impls env)
         t (vary-meta t assoc
@@ -1023,10 +1036,10 @@
        ~r)))
 
 (defmacro defprotocol [psym & doc+methods]
-  (let [p (:name (cljs.analyzer/resolve-var (dissoc &env :locals) psym))
+  (let [p (resolved-name &env psym)
         psym (vary-meta psym assoc :protocol-symbol true)
-        ns-name (-> &env :ns :name)
-        fqn (fn [n] (symbol (core/str ns-name "." n)))
+        ns-name (-> &env :ns name)
+        fqn (fn [n] (symbol ns-name (core/str n)))
         prefix (protocol-prefix p)
         methods (if (core/string? (first doc+methods)) (next doc+methods) doc+methods)
         expand-sig (fn [fname slot sig]
@@ -1065,9 +1078,7 @@
 (defmacro implements?
   "EXPERIMENTAL"
   [psym x]
-  (let [p          (:name
-                    (cljs.analyzer/resolve-var
-                      (dissoc &env :locals) psym))
+  (let [p          (resolved-name &env psym)
         prefix     (protocol-prefix p)
         xsym       (bool-expr (gensym))
         [part bit] (fast-path-protocols p)
@@ -1085,14 +1096,12 @@
 (defmacro satisfies?
   "Returns true if x satisfies the protocol"
   [psym x]
-  (let [p          (:name
-                     (cljs.analyzer/resolve-var
-                       (dissoc &env :locals) psym))
-         prefix     (protocol-prefix p)
-         xsym       (bool-expr (gensym))
-         [part bit] (fast-path-protocols p)
-         msym       (symbol
-                      (core/str "-cljs$lang$protocol_mask$partition" part "$"))]
+  (let [p          (resolved-name &env psym)
+        prefix     (protocol-prefix p)
+        xsym       (bool-expr (gensym))
+        [part bit] (fast-path-protocols p)
+        msym       (symbol
+                    (core/str "-cljs$lang$protocol_mask$partition" part "$"))]
     `(let [~xsym ~x]
        (if ~xsym
          (let [bit# ~(if bit `(unsafe-bit-and (. ~xsym ~msym) ~bit))]
@@ -1146,7 +1155,7 @@
   before the vars are bound to their new values."
   [bindings & body]
   (let [names (take-nth 2 bindings)]
-    (cljs.analyzer/confirm-bindings &env names)
+    #_(cljs.analyzer/confirm-bindings &env names)
     `(with-redefs ~bindings ~@body)))
 
 (defmacro condp
@@ -1199,7 +1208,7 @@
           test "'"
           (when (:line env)
             (core/str " on line " (:line env) " "
-              cljs.analyzer/*cljs-file*)))))
+                      #_cljs.analyzer/*cljs-file*)))))
     (assoc m test expr)))
 
 (defmacro case [e & clauses]
@@ -1444,8 +1453,8 @@
   ([] '(.-EMPTY cljs.core/PersistentArrayMap))
   ([& kvs]
      (let [keys (map first (partition 2 kvs))]
-       (if (core/and (every? #(= (:op %) :constant)
-                       (map #(cljs.analyzer/analyze &env %) keys))
+       (if (core/and (every? #(= (:op %) :const)
+                        (map #(clojure.tools.analyzer.js/analyze % &env) keys))
                      (= (count (into #{} keys)) (count keys)))
          `(cljs.core/PersistentArrayMap. nil ~(clojure.core// (count kvs) 2) (array ~@kvs) nil)
          `(.fromArray cljs.core/PersistentArrayMap (array ~@kvs) true false)))))
@@ -1463,9 +1472,9 @@
 (defmacro hash-set
   ([] `(.-EMPTY cljs.core/PersistentHashSet))
   ([& xs]
-    (if (core/and (core/<= (count xs) 8)
-                  (every? #(= (:op %) :constant)
-                    (map #(cljs.analyzer/analyze &env %) xs))
+     (if (core/and (core/<= (count xs) 8)
+                   (every? #(= (:op %) :const)
+                      (map #(clojure.tools.analyzer.js/analyze % &env) xs))
                   (= (count (into #{} xs)) (count xs)))
       `(cljs.core/PersistentHashSet. nil
          (cljs.core/PersistentArrayMap. nil ~(count xs) (array ~@(interleave xs (repeat nil))) nil)
