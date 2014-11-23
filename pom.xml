@@ -13,7 +13,7 @@
   </parent>
 
   <properties>
-    <clojure.version>1.5.1</clojure.version>
+    <clojure.version>1.6.0</clojure.version>
   </properties>
 
   <build>
