@@ -10,7 +10,7 @@
   (:require [clojure.tools.analyzer.ast :refer [prewalk]]
             [clojure.tools.analyzer.passes.cleanup :refer [cleanup]]
             [clojure.tools.analyzer.passes.js.infer-tag :refer [infer-tag]]
-            [clojure.tools.analyzer.utils :refer [source-info resolve-var resolve-ns]]))
+            [clojure.tools.analyzer.utils :refer [source-info resolve-sym resolve-ns]]))
 
 (defmulti -validate :op)
 (defmethod -validate :default [ast] ast)
@@ -32,7 +32,7 @@
 (defn validate-tag [t {:keys [env] :as ast}]
   (let [tag (ast t)]
     (if (symbol? tag)
-      (if-let [var (resolve-var tag env)]
+      (if-let [var (resolve-sym tag env)]
         (symbol (str (:ns var)) (str (:name var)))
         #_(if (or (= :type (:op var))
                 (:protocol (meta var)))

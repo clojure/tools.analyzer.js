@@ -14,7 +14,7 @@
              :refer [analyze analyze-in-env]
              :rename {analyze -analyze}]
             [clojure.tools.analyzer
-             [utils :refer [resolve-var resolve-ns ctx -source-info dissoc-env const-val mmerge]]
+             [utils :refer [resolve-sym resolve-ns ctx -source-info dissoc-env const-val mmerge]]
              [ast :refer [prewalk postwalk]]
              [env :as env :refer [*env*]]
              [passes :refer [schedule]]]
@@ -111,7 +111,7 @@
       var)))
 
 (defn resolve-sym [sym env]
-  (or (resolve-var sym env)
+  (or (resolve-sym sym env)
       (get-in env [:locals sym])))
 
 (defn dotted-symbol? [form env]

@@ -8,7 +8,7 @@
 
 (ns clojure.tools.analyzer.passes.js.analyze-host-expr
   (:require [clojure.tools.analyzer.env :as env]
-            [clojure.tools.analyzer.utils :refer [resolve-ns resolve-var]]))
+            [clojure.tools.analyzer.utils :refer [resolve-ns resolve-sym]]))
 
 (defmulti analyze-host-expr
   "Transform :host-interop nodes into :host-call, transform
@@ -29,7 +29,7 @@
 
 (defmethod analyze-host-expr :maybe-class
   [{:keys [class env] :as ast}]
-  (if-let [v (resolve-var class env)]
+  (if-let [v (resolve-sym class env)]
     (merge (dissoc ast :class)
            {:op          :js-var
             :var         v
@@ -48,7 +48,7 @@
            :assignable? true})
 
    (get-in (env/deref-env) [:namespaces (resolve-ns class env) :js-namespace])
-   (let [field (or (:name (resolve-var form env)) field)]
+   (let [field (or (:name (resolve-sym form env)) field)]
      (merge (dissoc ast :field :class)
             {:op          :js-var
              :var         {:op   :js-var

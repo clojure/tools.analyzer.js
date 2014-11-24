@@ -691,7 +691,7 @@
 ;; TODO
 (defn warn-and-update-protocol [p type env]
   (when-not (= 'Object p)
-    (if-let [var (utils/resolve-var p (dissoc env :locals))]
+    (if-let [var (utils/resolve-sym p (dissoc env :locals))]
       (do
         #_(when-not (:protocol-symbol var)
             (cljs.analyzer/warning :invalid-protocol-symbol env {:protocol p}))
