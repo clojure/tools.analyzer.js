@@ -47,16 +47,16 @@
   [ast opts]
   (default/-emit-form ast opts))
 
-(defmethod -emit-form :js
+(defmethod -emit-form :op/js
   [{:keys [segs args]} opts]
   (list* 'js* (s/join "~{}" segs) (mapv #(-emit-form* % opts) args)))
 
-(defmethod -emit-form :js-object
+(defmethod -emit-form :op/js-object
   [{:keys [keys vals]} opts]
   (->JSValue (zipmap (map #(-emit-form* % opts) keys)
                      (map #(-emit-form* % opts) vals))))
 
-(defmethod -emit-form :js-array
+(defmethod -emit-form :op/js-array
   [{:keys [items]} opts]
   (->JSValue (mapv #(-emit-form* % opts) items)))
 
@@ -64,25 +64,25 @@
   (.write w "#js ")
   (.write w (str (.val o))))
 
-(defmethod -emit-form :deftype
+(defmethod -emit-form :op/deftype
   [{:keys [name fields pmask body]} opts]
   (list 'deftype* name (map #(-emit-form* % opts) fields) pmask
         (-emit-form* body opts)))
 
-(defmethod -emit-form :defrecord
+(defmethod -emit-form :op/defrecord
   [{:keys [name fields pmask body]} opts]
   (list 'defrecord* name (map #(-emit-form* % opts) fields) pmask
         (-emit-form* body opts)))
 
-(defmethod -emit-form :case-then
+(defmethod -emit-form :op/case-then
   [{:keys [then]} opts]
   (-emit-form* then opts))
 
-(defmethod -emit-form :case-test
+(defmethod -emit-form :op/case-test
   [{:keys [test]} opts]
   (-emit-form* test opts))
 
-(defmethod -emit-form :case
+(defmethod -emit-form :op/case
   [{:keys [test nodes default]} opts]
   `(case* ~(-emit-form* test opts)
           ~@(reduce (fn [acc {:keys [tests then]}]

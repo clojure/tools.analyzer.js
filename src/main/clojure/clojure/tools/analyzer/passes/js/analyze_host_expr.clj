@@ -19,29 +19,29 @@
 
 (defmethod analyze-host-expr :default [ast] ast)
 
-(defmethod analyze-host-expr :host-interop
+(defmethod analyze-host-expr :op/host-interop
   [{:keys [m-or-f target] :as ast}]
   (merge (dissoc ast :m-or-f)
-         {:op       :host-call
+         {:op       :op/host-call
           :method   m-or-f
           :args     []
           :children [:target :args]}))
 
-(defmethod analyze-host-expr :maybe-class
+(defmethod analyze-host-expr :op/maybe-class
   [{:keys [class env] :as ast}]
   (if-let [v (resolve-sym class env)]
     (merge (dissoc ast :class)
-           {:op          :js-var
+           {:op          :op/js-var
             :var         v
             :assignable? true})
     ast))
 
-(defmethod analyze-host-expr :maybe-host-form
+(defmethod analyze-host-expr :op/maybe-host-form
   [{:keys [class field env form] :as ast}]
   (cond
    (= 'js class)
    (merge (dissoc ast :field :class)
-          {:op          :js-var
+          {:op          :op/js-var
            :var         {:op   :js-var
                          :name field
                          :ns   nil}
@@ -50,7 +50,7 @@
    (get-in (env/deref-env) [:namespaces (resolve-ns class env) :js-namespace])
    (let [field (or (:name (resolve-sym form env)) field)]
      (merge (dissoc ast :field :class)
-            {:op          :js-var
+            {:op          :op/js-var
              :var         {:op   :js-var
                            :name field
                            :ns   (resolve-ns class env)}

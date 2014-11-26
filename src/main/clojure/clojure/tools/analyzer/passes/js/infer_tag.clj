@@ -17,35 +17,35 @@
 (defmulti -infer-tag :op)
 (defmethod -infer-tag :default [ast] ast)
 
-(defmethod -infer-tag :recur
+(defmethod -infer-tag :op/recur
   [ast]
   (assoc ast :tag 'ignore :ignore-tag true))
 
-(defmethod -infer-tag :throw
+(defmethod -infer-tag :op/throw
   [ast]
   (assoc ast :tag 'ignore :ignore-tag true))
 
-(defmethod -infer-tag :with-meta
+(defmethod -infer-tag :op/with-meta
   [{:keys [expr] :as ast}]
   (merge ast (select-keys expr [:return-tag :arglists :ignore-tag :tag])))
 
-(defmethod -infer-tag :do
+(defmethod -infer-tag :op/do
   [{:keys [ret] :as ast}]
   (merge ast (select-keys ret [:return-tag :arglists :ignore-tag :tag])))
 
-(defmethod -infer-tag :let
+(defmethod -infer-tag :op/let
   [{:keys [body] :as ast}]
   (merge ast (select-keys body [:return-tag :arglists :ignore-tag :tag])))
 
-(defmethod -infer-tag :letfn
+(defmethod -infer-tag :op/letfn
   [{:keys [body] :as ast}]
   (merge ast (select-keys body [:return-tag :arglists :ignore-tag :tag])))
 
-(defmethod -infer-tag :loop
+(defmethod -infer-tag :op/loop
   [{:keys [body] :as ast}]
   (merge ast (select-keys body [:return-tag :arglists :ignore-tag :tag])))
 
-(defmethod -infer-tag :binding
+(defmethod -infer-tag :op/binding
   [{:keys [init atom] :as ast}]
   (let [ast (if init
               (merge (select-keys init [:return-tag :arglists :ignore-tag :tag]) ast)
@@ -53,37 +53,37 @@
     (swap! atom merge (select-keys ast [:return-tag :arglists :ignore-tag :tag]))
     ast))
 
-(defmethod -infer-tag :local
+(defmethod -infer-tag :op/local
   [{:keys [atom] :as ast}]
   (merge ast @atom))
 
-(defmethod -infer-tag :def
+(defmethod -infer-tag :op/def
   [{:keys [init var] :as ast}]
   (let [info (select-keys init [:return-tag :arglists :ignore-tag :tag])]
     (swap! env/*env* update-in [:namespaces (:ns var) :mappings (:name var)] merge info)
     (merge ast info)))
 
-(defmethod -infer-tag :var
+(defmethod -infer-tag :op/var
   [{:keys [var] :as ast}]
   (let [info (-> (env/deref-env)
                (get-in [:namespaces (:ns var) :mappings (:name var)])
                (select-keys [:return-tag :arglists :ignore-tag :tag]))]
     (merge ast info)))
 
-(defmethod -infer-tag :set!
+(defmethod -infer-tag :op/set!
   [{:keys [target] :as ast}]
   (if-let [tag (:tag target)]
     (assoc ast :tag tag)
     ast))
 
-(defmethod -infer-tag :invoke
+(defmethod -infer-tag :op/invoke
   [{:keys [fn args] :as ast}]
   (if (:arglists fn)
     (let [argc (count args)
           arglist (arglist-for-arity fn argc)
           tag (or (:tag (meta arglist))
                   (:return-tag fn)
-                  (and (= :var (:op fn))
+                  (and (isa? :op/var (:op fn))
                        (:tag (meta (:var fn)))))]
       (merge ast
              (when tag
@@ -101,7 +101,7 @@
                                (mapv tag a2))))
                      a1 a2)))))
 
-(defmethod -infer-tag :if
+(defmethod -infer-tag :op/if
   [{:keys [then else] :as ast}]
   (let [then-tag (:tag then)
         else-tag (:tag else)
@@ -136,13 +136,13 @@
      ast)))
 
 ;;TODO: handle catches
-(defmethod -infer-tag :try
+(defmethod -infer-tag :op/try
   [{:keys [body catches] :as ast}]
   (let [{:keys []} body]
     (merge ast (select-keys [:tag :return-tag :arglists :ignore-tag] body))))
 
 ;;TODO: handle :ignore-tag ?
-(defmethod -infer-tag :fn-method
+(defmethod -infer-tag :op/fn-method
   [{:keys [form body params local] :as ast}]
   (let [annotated-tag (or (:tag (meta (first form)))
                           (:tag (meta (:form local))))
@@ -156,7 +156,7 @@
                                              params))
                        (when tag {:tag tag}))})))
 
-(defmethod -infer-tag :fn
+(defmethod -infer-tag :op/fn
   [{:keys [local methods] :as ast}]
   (merge ast
          {:arglists (seq (mapv :arglist methods))}
@@ -167,7 +167,7 @@
   (when-let [{:keys [ns name]} var]
     (symbol (str (or ns 'js)) (str name))))
 
-(defmethod -infer-tag :new
+(defmethod -infer-tag :op/new
   [{:keys [class] :as ast}]
   (if-let [v (var-sym (:var class))]
     (assoc ast :tag (case v

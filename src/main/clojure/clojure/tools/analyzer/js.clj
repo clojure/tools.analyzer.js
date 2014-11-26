@@ -205,13 +205,13 @@
         items-env (ctx env :expr)]
     (if (map? val)
       ;; keys should always be symbols/kewords, do we really need to analyze them?
-      {:op       :js-object
+      {:op       :op/js-object
        :env      env
        :keys     (mapv (analyze-in-env items-env) (keys val))
        :vals     (mapv (analyze-in-env items-env) (vals val))
        :form     form
        :children [:keys :vals]}
-      {:op       :js-array
+      {:op       :op/js-array
        :env      env
        :items    (mapv (analyze-in-env items-env) val)
        :form     form
@@ -226,12 +226,12 @@
 (defn parse-type
   [op [_ name fields pmasks body :as form] {:keys [ns] :as env}]
   (let [fields-expr (mapv (fn [name]
-                            {:env     env
+                            {:op      :op/binding
+                             :env     env
                              :form    name
                              :name    name
                              :mutable (:mutable (meta name))
-                             :local   :field
-                             :op      :binding})
+                             :local   :field})
                           fields)
         protocols (-> name meta :protocols)
 
@@ -258,11 +258,11 @@
 
 (defmethod parse 'deftype*
   [form env]
-  (parse-type :deftype form env))
+  (parse-type :op/deftype form env))
 
 (defmethod parse 'defrecord*
   [form env]
-  (parse-type :defrecord form env))
+  (parse-type :op/defrecord form env))
 
 ;; no ~{foo} support since cljs itself doesn't use it anywhere
 (defmethod parse 'js*
@@ -279,7 +279,7 @@
                            (subs s (inc (.indexOf s "}" idx)))))))
         exprs (mapv (analyze-in-env (ctx env :ctx/expr)) args)]
     (merge
-     {:op       :js
+     {:op       :op/js
       :env      env
       :form     form
       :segs     segs}
@@ -294,17 +294,17 @@
   (let [expr-env (ctx env :expr)
         test-expr (-analyze test expr-env)
         nodes (mapv (fn [tests then]
-                      {:op       :case-node
+                      {:op       :op/case-node
                        ;; no :form, this is a synthetic grouping node
                        :env      env
                        :tests    (mapv (fn [test]
-                                         {:op       :case-test
+                                         {:op       :op/case-test
                                           :form     test
                                           :env      expr-env
                                           :test     (-analyze test expr-env)
                                           :children [:test]})
                                        tests)
-                       :then     {:op       :case-then
+                       :then     {:op       :op/case-then
                                   :form     test
                                   :env      env
                                   :then     (-analyze then env)
@@ -312,11 +312,11 @@
                        :children [:tests :then]})
                     tests thens)
         default-expr (-analyze default env)]
-    (assert (every? (fn [t] (and (= :const (-> t :test :op))
+    (assert (every? (fn [t] (and (isa? :op/const (-> t :test :op))
                            ((some-fn number? string?) (:form t))))
                (mapcat :tests nodes))
             "case* tests must be numbers or strings")
-    {:op       :case
+    {:op       :op/case
      :form     form
      :env      env
      :test     (assoc test-expr :case-test true)
@@ -409,7 +409,7 @@
                   (populate-env name env))]
     (set! *ns* name)
     (merge
-     {:op      :ns
+     {:op      :op/ns
       :env     env
       :form    form
       :name    name
@@ -419,10 +419,11 @@
      (when metadata
        {:meta metadata}))))
 
+;; cljs def meta is not evaluated
 (defmethod parse 'def
   [form env]
   (let [{:keys [meta] :as ast} (ana/-parse form env)]
-    (if (and meta (= :map (:op meta)))
+    (if (and meta (isa? :op/map (:op meta)))
       (let [const-map (zipmap (mapv const-val (:keys meta))
                               (mapv const-val (:vals meta)))]
         (assoc-in ast [:meta] (ana/analyze-const const-map env)))

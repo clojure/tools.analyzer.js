@@ -15,7 +15,7 @@
    The keyword to id map is available in the global env under ::keywords"
   {:pass-info {:walk :any :depends #{#'elide-meta}}}
   [ast]
-  (if (and (= (:op ast) :const)
+  (if (and (isa? :op/const (:op ast))
            (= (:type ast) :keyword))
     (let [v (:val ast)
           id (or (get-in (env/deref-env) [::keywords v])

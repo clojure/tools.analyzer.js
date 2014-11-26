@@ -15,14 +15,14 @@
 (defmulti -validate :op)
 (defmethod -validate :default [ast] ast)
 
-(defmethod -validate :maybe-class [{:keys [class form env] :as ast}]
+(defmethod -validate :op/maybe-class [{:keys [class form env] :as ast}]
   (when-not (:analyzer/allow-undefined (meta form))
     (throw (ex-info (str "Cannot resolve: " class)
                     (merge {:sym class
                             :ast (prewalk ast cleanup)}
                            (source-info env))))) )
 
-(defmethod -validate :maybe-host-form [{:keys [form env] :as ast}]
+(defmethod -validate :op/maybe-host-form [{:keys [form env] :as ast}]
   (when-not (:analyzer/allow-undefined (meta form))
     (throw (ex-info (str "Cannot resolve: " form)
                     (merge {:sym form
