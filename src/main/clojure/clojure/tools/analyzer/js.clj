@@ -478,7 +478,7 @@
                             #'ana/analyze-form  analyze-form
                             #'elides            (-> elides
                                                   (update-in [:all] into #{:line :column :end-line :end-column :file :source})
-                                                  (update-in [:fn] into #{:cljs.analyzer/type :cljs.analyzer/protocol-impl :cljs.analyzer/protocol-inline}))}
+                                                  (assoc-in [:fn] #{:cljs.analyzer/type :cljs.analyzer/protocol-impl :cljs.analyzer/protocol-inline}))}
                            (when-not (thread-bound? #'*ns*)
                              {#'*ns* *ns*})
                            (:bindings opts))
