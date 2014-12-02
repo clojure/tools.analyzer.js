@@ -1576,7 +1576,7 @@
         m           (if (meta mm-name)
                       (conj (meta mm-name) m)
                       m)
-        mm-ns (-> &env :ns :name core/str)]
+        mm-ns (-> &env :ns core/str)]
     (when (= (count options) 1)
       (throw (Exception. "The syntax for defmulti has changed. Example: (defmulti name dispatch-fn :default dispatch-value)")))
     (let [options   (apply core/hash-map options)
@@ -1588,7 +1588,7 @@
                method-cache# (atom {})
                cached-hierarchy# (atom {})
                hierarchy# (get ~options :hierarchy (cljs.core/get-global-hierarchy))]
-           (cljs.core/MultiFn. ~(cljs.core/symbol ~mm-ns (name mm-name)) ~dispatch-fn ~default hierarchy#
+           (cljs.core/MultiFn. (cljs.core/symbol ~mm-ns ~(name mm-name)) ~dispatch-fn ~default hierarchy#
                                method-table# prefer-table# method-cache# cached-hierarchy#))))))
 
 (defmacro defmethod
