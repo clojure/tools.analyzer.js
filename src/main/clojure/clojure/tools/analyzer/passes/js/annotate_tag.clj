@@ -6,9 +6,10 @@
 ;;   the terms of this license.
 ;;   You must not remove this notice, or any other, from this software.
 
-(ns clojure.tools.analyzer.passes.js.annotate-tag)
+(ns clojure.tools.analyzer.passes.js.annotate-tag
+  (:require [clojure.tools.analyzer :refer [h]]))
 
-(defmulti -annotate-tag :op)
+(defmulti -annotate-tag :op :hierarchy h)
 
 (defmethod -annotate-tag :op/vector
   [ast]

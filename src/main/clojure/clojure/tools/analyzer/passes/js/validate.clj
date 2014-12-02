@@ -8,11 +8,12 @@
 
 (ns clojure.tools.analyzer.passes.js.validate
   (:require [clojure.tools.analyzer.ast :refer [prewalk]]
+            [clojure.tools.analyzer :refer [h]]
             [clojure.tools.analyzer.passes.cleanup :refer [cleanup]]
             [clojure.tools.analyzer.passes.js.infer-tag :refer [infer-tag]]
             [clojure.tools.analyzer.utils :refer [source-info resolve-sym resolve-ns]]))
 
-(defmulti -validate :op)
+(defmulti -validate :op :hierarchy h)
 (defmethod -validate :default [ast] ast)
 
 (defmethod -validate :op/maybe-class [{:keys [class form env] :as ast}]

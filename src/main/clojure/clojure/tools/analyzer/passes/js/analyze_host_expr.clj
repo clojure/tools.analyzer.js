@@ -7,7 +7,8 @@
 ;;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.tools.analyzer.passes.js.analyze-host-expr
-  (:require [clojure.tools.analyzer.env :as env]
+  (:require [clojure.tools.analyzer :refer [h]]
+            [clojure.tools.analyzer.env :as env]
             [clojure.tools.analyzer.utils :refer [resolve-ns resolve-sym]]))
 
 (defmulti analyze-host-expr
@@ -15,7 +16,8 @@
   :maybe-class or :maybe-host-form nodes resolvable to js vars
   into :js-var nodes"
   {:pass-info {:walk :any :depends #{}}}
-  :op)
+  :op
+  :hierarchy h)
 
 (defmethod analyze-host-expr :default [ast] ast)
 

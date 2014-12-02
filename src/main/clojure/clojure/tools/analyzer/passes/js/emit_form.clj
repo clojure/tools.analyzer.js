@@ -7,7 +7,8 @@
 ;;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.tools.analyzer.passes.js.emit-form
-  (:require [clojure.tools.analyzer.passes
+  (:require [clojure.tools.analyzer :refer [h]]
+            [clojure.tools.analyzer.passes
              [emit-form :as default]
              [uniquify :refer [uniquify-locals]]]
             [clojure.string :as s]
@@ -15,7 +16,7 @@
   (:import cljs.tagged_literals.JSValue
            java.io.Writer))
 
-(defmulti -emit-form (fn [{:keys [op]} _] op))
+(defmulti -emit-form (fn [{:keys [op]} _] op) :hierarchy h)
 
 (defn -emit-form*
   [{:keys [form] :as ast} opts]

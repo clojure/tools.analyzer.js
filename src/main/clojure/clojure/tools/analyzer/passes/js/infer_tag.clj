@@ -7,14 +7,15 @@
 ;;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.tools.analyzer.passes.js.infer-tag
-  (:require [clojure.tools.analyzer.env :as env]
+  (:require [clojure.tools.analyzer :refer [h]]
+            [clojure.tools.analyzer.env :as env]
             [clojure.tools.analyzer.utils :refer [arglist-for-arity]]
             [clojure.tools.analyzer.passes.add-binding-atom :refer [add-binding-atom]]
             [clojure.tools.analyzer.passes.js
              [annotate-tag :refer [annotate-tag]]
              [analyze-host-expr :refer [analyze-host-expr]]]))
 
-(defmulti -infer-tag :op)
+(defmulti -infer-tag :op :hierarchy h)
 (defmethod -infer-tag :default [ast] ast)
 
 (defmethod -infer-tag :op/recur
@@ -83,7 +84,7 @@
           arglist (arglist-for-arity fn argc)
           tag (or (:tag (meta arglist))
                   (:return-tag fn)
-                  (and (isa? :op/var (:op fn))
+                  (and (isa? @h :op/var (:op fn))
                        (:tag (meta (:var fn)))))]
       (merge ast
              (when tag

@@ -7,7 +7,8 @@
 ;;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.tools.analyzer.passes.js.collect-keywords
-  (:require [clojure.tools.analyzer.env :as env]
+  (:require [clojure.tools.analyzer :refer [h]]
+            [clojure.tools.analyzer.env :as env]
             [clojure.tools.analyzer.passes.elide-meta :refer [elide-meta]]))
 
 (defn collect-keywords
@@ -15,7 +16,7 @@
    The keyword to id map is available in the global env under ::keywords"
   {:pass-info {:walk :any :depends #{#'elide-meta}}}
   [ast]
-  (if (and (isa? :op/const (:op ast))
+  (if (and (isa? @h :op/const (:op ast))
            (= (:type ast) :keyword))
     (let [v (:val ast)
           id (or (get-in (env/deref-env) [::keywords v])

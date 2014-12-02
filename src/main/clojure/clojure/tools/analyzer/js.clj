@@ -11,7 +11,7 @@
   (:refer-clojure :exclude [macroexpand-1 var? *ns* ns-resolve])
   (:require [clojure.tools.analyzer
              :as ana
-             :refer [analyze analyze-in-env]
+             :refer [analyze analyze-in-env h]
              :rename {analyze -analyze}]
             [clojure.tools.analyzer
              [utils :refer [resolve-ns ctx -source-info dissoc-env const-val mmerge] :as u]
@@ -231,7 +231,7 @@
                              :form    name
                              :name    name
                              :mutable (:mutable (meta name))
-                             :local   :field})
+                             :local   :local/field})
                           fields)
         protocols (-> name meta :protocols)
 
@@ -312,7 +312,7 @@
                        :children [:tests :then]})
                     tests thens)
         default-expr (-analyze default env)]
-    (assert (every? (fn [t] (and (isa? :op/const (-> t :test :op))
+    (assert (every? (fn [t] (and (isa? @h :op/const (-> t :test :op))
                            ((some-fn number? string?) (:form t))))
                (mapcat :tests nodes))
             "case* tests must be numbers or strings")
@@ -423,7 +423,7 @@
 (defmethod parse 'def
   [form env]
   (let [{:keys [meta] :as ast} (ana/-parse form env)]
-    (if (and meta (isa? :op/map (:op meta)))
+    (if (and meta (isa? @h :op/map (:op meta)))
       (let [const-map (zipmap (mapv const-val (:keys meta))
                               (mapv const-val (:vals meta)))]
         (assoc-in ast [:meta] (ana/analyze-const const-map env)))
