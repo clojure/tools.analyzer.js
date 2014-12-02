@@ -206,31 +206,10 @@
       (core/inc (core/quot c 32)))))
 
 (defmacro str [& xs]
-  ;; Eagerly stringify any string or char literals.
-  (let [clean-xs (reduce (fn [acc x]
-                     (core/cond
-                       (core/or (core/string? x) (core/char? x))
-                       (if (core/string? (peek acc))
-                         (conj (pop acc) (core/str (peek acc) x))
-                         (conj acc (core/str x)))
-                       (core/nil? x) acc
-                       :else (conj acc x)))
-                   [] xs)
-        ;; clean-xs now has no nils, chars, or string-adjoining-string. bools,
-        ;; ints and floats will be emitted literally to allow JS string coersion.
-        strs (->> clean-xs
-                  (map #(if (core/or (core/string? %) (core/integer? %)
-                                     (core/float? %) (core/true? %)
-                                     (core/false? %))
-                            "~{}"
-                            "cljs.core.str.cljs$core$IFn$_invoke$arity$1(~{})"))
-                  (interpose "+")
-                  (apply core/str))]
-    ;; Google closure advanced compile will stringify and concat strings and
-    ;; numbers at compilation time.
-    (list* 'js* (core/str (if (core/string? (first clean-xs)) "(" "(''+")
-                          strs ")")
-           clean-xs)))
+  (let [strs (->> (repeat (count xs) "cljs.core.str(~{})")
+                (interpose ",")
+                (apply core/str))]
+    (list* 'js* (core/str "[" strs "].join('')") xs)))
 
 (defn bool-expr [e]
   (vary-meta e assoc :tag 'boolean))
@@ -644,7 +623,7 @@
            IMeta
            (~'-meta [~this-sym] ~meta-sym)
            ~@impls))
-       (new ~t ~@locals nil))))
+       (new ~t ~@locals ~(meta &form)))))
 
 (defmacro specify! [expr & impls]
   (let [x (with-meta (gensym "x") {:extend :instance})]
@@ -889,8 +868,8 @@
     (dt->et type specs fields false))
   ([type specs fields inline]
     (let [annots {:cljs.analyzer/type type
-                  :protocol-impl true
-                  :protocol-inline inline}]
+                  :cljs.analyzer/protocol-impl true
+                  :cljs.analyzer/protocol-inline inline}]
       (loop [ret [] specs specs]
         (if (seq specs)
           (let [p     (first specs)
@@ -1042,6 +1021,9 @@
         fqn (fn [n] (symbol ns-name (core/str n)))
         prefix (protocol-prefix p)
         methods (if (core/string? (first doc+methods)) (next doc+methods) doc+methods)
+        _ (core/doseq [[mname & arities] methods]
+            (when (some #{0} (map count arities))
+              (throw (Exception. (core/str "Invalid protocol, " psym " defines method " mname " with arity 0")))))
         expand-sig (fn [fname slot sig]
                      `(~sig
                        (if (and ~(first sig) (. ~(first sig) ~(symbol (core/str "-" slot)))) ;; Property access needed here.
@@ -1251,7 +1233,7 @@
             thens (vec (vals pairs))]
         `(let [~esym (if (keyword? ~e) (.-fqn ~e) nil)]
            (case* ~esym ~tests ~thens ~default)))
-      
+
       ;; equality
       :else
       `(let [~esym ~e]
@@ -1593,7 +1575,8 @@
                       m)
         m           (if (meta mm-name)
                       (conj (meta mm-name) m)
-                      m)]
+                      m)
+        mm-ns (-> &env :ns core/str)]
     (when (= (count options) 1)
       (throw (Exception. "The syntax for defmulti has changed. Example: (defmulti name dispatch-fn :default dispatch-value)")))
     (let [options   (apply core/hash-map options)
@@ -1605,7 +1588,7 @@
                method-cache# (atom {})
                cached-hierarchy# (atom {})
                hierarchy# (get ~options :hierarchy (cljs.core/get-global-hierarchy))]
-           (cljs.core/MultiFn. ~(name mm-name) ~dispatch-fn ~default hierarchy#
+           (cljs.core/MultiFn. (cljs.core/symbol ~mm-ns ~(name mm-name)) ~dispatch-fn ~default hierarchy#
                                method-table# prefer-table# method-cache# cached-hierarchy#))))))
 
 (defmacro defmethod
@@ -1679,7 +1662,7 @@
 (defmacro lazy-cat
   "Expands to code which yields a lazy sequence of the concatenation
   of the supplied colls.  Each coll expr is not evaluated until it is
-  needed. 
+  needed.
 
   (lazy-cat xs ys zs) === (concat (lazy-seq xs) (lazy-seq ys) (lazy-seq zs))"
   [& colls]
