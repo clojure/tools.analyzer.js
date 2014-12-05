@@ -486,13 +486,6 @@
          (swap! env/*env* mmerge {:passes-opts (:passes-opts opts)})
          (run-passes (-analyze form env))))))
 
-(defn analyze'
-  "Like `analyze` but runs cleanup on the AST"
-  ([form] (analyze' form (empty-env)))
-  ([form env] (analyze' form env {}))
-  ([form env opts]
-     (prewalk (analyze form env opts) cleanup)))
-
 (defn analyze-ns
   "Analyzes a whole namespace, returns a vector of the ASTs for all the
    top-level ASTs of that namespace."
