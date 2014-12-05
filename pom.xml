@@ -80,12 +80,12 @@
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>tools.reader</artifactId>
-      <version>0.8.12</version>
+      <version>0.8.13</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojurescript</artifactId>
-      <version>0.0-2371</version>
+      <version>0.0-2411</version>
     </dependency>
   </dependencies>
 

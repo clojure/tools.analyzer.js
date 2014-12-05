@@ -7,5 +7,5 @@
   :test-paths ["src/test/clojure"]
   :dependencies [[org.clojure/clojure "1.7.0-alpha4"]
                  [org.clojure/tools.analyzer "0.6.5-SNAPSHOT"]
-                 [org.clojure/tools.reader "0.8.12"]
-                 [org.clojure/clojurescript "0.0-2371"]])
+                 [org.clojure/tools.reader "0.8.13"]
+                 [org.clojure/clojurescript "0.0-2411"]])
