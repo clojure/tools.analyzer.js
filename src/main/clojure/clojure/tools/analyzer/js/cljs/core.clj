@@ -34,11 +34,12 @@
 
                             cond-> cond->> as-> some-> some->>
 
-                            if-some when-some])
+                            if-some when-some test])
   (:require clojure.walk
             clojure.set
             cljs.compiler
             [clojure.tools.analyzer.env :as env]
+            [clojure.tools.analyzer :as a]
             [clojure.tools.analyzer.utils :as utils]))
 
 (alias 'core 'clojure.core)
@@ -1676,3 +1677,16 @@
      (fn []
        (this-as this#
          (cljs.core/es6-iterator this#)))))
+
+(defmacro test
+  "Given a symbol, resolve it as a var, if a test is attached
+ to a var execute it."
+  [v]
+  (let [f (->> (dissoc &env :locals)
+             (a/resolve-sym v)
+             meta
+             :test)]
+    `(let [f# ~f]
+       (if f#
+         (do (f#) :ok)
+         :no-test))))

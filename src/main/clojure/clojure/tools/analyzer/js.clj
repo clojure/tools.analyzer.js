@@ -111,7 +111,7 @@
       var)))
 
 (defn resolve-sym [sym env]
-  (or (u/resolve-sym sym env)
+  (or (u/resolve-sym (fix-symbol sym) env)
       (get-in env [:locals sym])))
 
 (defn dotted-symbol? [form env]
