@@ -1684,10 +1684,9 @@
                      (symbol ~(name sym-ns) ~(name sym-name))
                      (merge
                       {:ns (symbol ~(name sym-ns))
-                       :name (symbol ~(name sym-name))
-                       :file ~(:file (meta info))
-                       :line ~(:line (meta info))
-                       :column ~(:column (meta info))}
+                       :name (symbol ~(name sym-name))}
+                      ~(select-keys (meta info) [:file :line :column :doc])
+                      {:arglists ~(list 'quote (-> info meta :arglists))}
                       ~(when (:test info)
                          `{:test (.-cljs$lang$test ~sym)})))))
 
