@@ -1678,10 +1678,23 @@
        (this-as this#
          (cljs.core/es6-iterator this#)))))
 
+(defmacro var [sym]
+  (core/let [{sym-ns :ns sym-name :name :as info} (a/resolve-sym sym (dissoc &env :locals))]
+    `(cljs.core/Var. ~sym
+                     (symbol ~(name sym-ns) ~(name sym-name))
+                     (merge
+                      {:ns (symbol ~(name sym-ns))
+                       :name (symbol ~(name sym-name))
+                       :file ~(:file (meta info))
+                       :line ~(:line (meta info))
+                       :column ~(:column (meta info))}
+                      ~(when (:test info)
+                         `{:test (.-cljs$lang$test ~sym)})))))
+
 (defmacro ns-interns
   "Returns a map of the intern mappings for the namespace."
   [[quote ns]]
   (core/assert (core/and (= quote 'quote) (core/symbol? ns))
                "Argument to ns-interns must be a quoted symbol")
-  `(into {} ~(mapv (fn [[sym {:keys [ns name]}]] `[~sym ~(core/symbol (core/name ns) (core/name name))])
+  `(into {} ~(mapv (fn [[sym {:keys [ns name]}]] `[~sym (cljs.core/var ~(core/symbol (core/name ns) (core/name name)))])
                    (get-in (env/deref-env) [:namespaces ns :mappings]))))
