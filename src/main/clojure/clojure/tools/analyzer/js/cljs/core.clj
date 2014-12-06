@@ -34,7 +34,7 @@
 
                             cond-> cond->> as-> some-> some->>
 
-                            if-some when-some test])
+                            if-some when-some test ns-interns])
   (:require clojure.walk
             clojure.set
             cljs.compiler
@@ -1677,3 +1677,11 @@
      (fn []
        (this-as this#
          (cljs.core/es6-iterator this#)))))
+
+(defmacro ns-interns
+  "Returns a map of the intern mappings for the namespace."
+  [[quote ns]]
+  (core/assert (core/and (= quote 'quote) (core/symbol? ns))
+               "Argument to ns-interns must be a quoted symbol")
+  `(into {} ~(mapv (fn [[sym {:keys [ns name]}]] `[~sym ~(core/symbol (core/name ns) (core/name name))])
+                   (get-in (env/deref-env) [:namespaces ns :mappings]))))
