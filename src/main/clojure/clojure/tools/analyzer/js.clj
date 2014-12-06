@@ -425,7 +425,12 @@
     (if (and meta (= :map (:op meta)))
       (let [const-map (zipmap (mapv const-val (:keys meta))
                               (mapv const-val (:vals meta)))]
-        (assoc-in ast [:meta] (ana/analyze-const const-map env)))
+        (if-let [test (:test meta)]
+          (-> ast
+            (assoc :test (ana/analyze-form test env))
+            (assoc :meta (ana/analyze-const (dissoc const-map :test) env))
+            (update-in [:children] (fnil conj []) :test))
+          (assoc ast :meta (ana/analyze-const const-map env))))
       ast)))
 
 (def default-passes
