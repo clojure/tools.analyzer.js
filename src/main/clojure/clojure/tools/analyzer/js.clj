@@ -14,7 +14,7 @@
              :refer [analyze analyze-in-env]
              :rename {analyze -analyze}]
             [clojure.tools.analyzer
-             [utils :refer [resolve-ns ctx -source-info dissoc-env const-val mmerge] :as u]
+             [utils :refer [resolve-ns ctx -source-info dissoc-env const-val mmerge update-vals] :as u]
              [ast :refer [prewalk postwalk]]
              [env :as env :refer [*env*]]
              [passes :refer [schedule]]]
@@ -420,18 +420,14 @@
        {:meta metadata}))))
 
 (defmethod parse 'def
-  [form env]
-  (let [{:keys [meta] :as ast} (ana/-parse form env)]
-    (if (and meta (= :map (:op meta)))
-      (let [const-map (zipmap (mapv const-val (:keys meta))
-                              (mapv const-val (:vals meta)))]
-        (if-let [test (:test meta)]
-          (-> ast
-            (assoc :test (ana/analyze-form test env))
-            (assoc :meta (ana/analyze-const (dissoc const-map :test) env))
-            (update-in [:children] (fnil conj []) :test))
-          (assoc ast :meta (ana/analyze-const const-map env))))
-      ast)))
+  [[_ sym & rest :as form] env]
+  (let [ks #{:ns :name :doc :arglists :file :line :column}
+        meta (meta sym)
+        m (merge {}
+                 (update-vals (select-keys meta ks) (fn [x] (list 'quote x)))
+                 (when (:test meta)
+                   {:test `(.-cljs$lang$test ~sym)}))]
+    (ana/-parse (with-meta `(def ~(with-meta sym m) ~@rest) (meta form)) env)))
 
 (def default-passes
   "Set of passes that will be run by default on the AST by #'run-passes"
