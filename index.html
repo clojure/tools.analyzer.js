@@ -1,12 +1,12 @@
 <html>
   <head>
-    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Overview - Javascript-specific passes for tools.analyzer 0.1.0 API documentation</title>
-    <link href="static/favicon.png" rel="icon" />
-    <link href="static/favicon.png" rel="shortcut icon" />
-    <link media="all" type="text/css" href="static/clojure.css" rel="stylesheet" />
-    <link media="all" type="text/css" href="static/wiki.css" rel="stylesheet" />
-    <link media="all" type="text/css" href="static/internal.css" rel="stylesheet" />
+    <link rel="icon" href="static/favicon.png" />
+    <link rel="shortcut icon" href="static/favicon.png" />
+    <link rel="stylesheet" href="static/clojure.css" type="text/css" media="all" />
+    <link rel="stylesheet" href="static/wiki.css" type="text/css" media="all" />
+    <link rel="stylesheet" href="static/internal.css" type="text/css" media="all" />
     <style>.menuWrapper{height: 36px;}</style>
   </head>
 <!--
@@ -19,54 +19,54 @@ namespace.
   <body>
     <div id="AllContentContainer">
       <div id="Header">
-	<a id="Logo" href="index.html"><img alt="Clojure" height="100" width="100" src="static/clojure-icon.gif" /></a>
-	<h1><a title="page header title" id="page-header" href="index.html">tools.analyzer.js API Reference</a></h1>
+	<a href="index.html" id="Logo"><img src="static/clojure-icon.gif" width="100" height="100" alt="Clojure" /></a>
+	<h1><a href="index.html" id="page-header" title="page header title">tools.analyzer.js API Reference</a></h1>
       </div>
       <div id="leftcolumn"><div style="text-align: center;"></div>
 <div class="menu">
   <div class="WikiCustomNav WikiElement wiki">
     <span class="toc-header"><span id="project-name">Javascript-specific passes for tools.analyzer</span> <span id="version">0.1.0</span> API</span><br />
     <ul>
-      <li><a class="wiki_link" href="index.html">Overview</a></li>
-      <li><a class="wiki_link" href="api-index.html">API Index</a></li>
+      <li><a href="index.html" class="wiki_link">Overview</a></li>
+      <li><a href="api-index.html" class="wiki_link">API Index</a></li>
     </ul>
     <div class="NamespaceTOC">
       <span class="toc-header">Namespaces</span>
       <ul id="left-sidebar-list">
-        <li><a href="js-api.html" class="wiki_link">js</a></li><li><a href="passes.js.analyze-host-expr-api.html" class="wiki_link">passes.js.analyze-host-expr</a></li><li><a href="passes.js.annotate-tag-api.html" class="wiki_link">passes.js.annotate-tag</a></li><li><a href="passes.js.collect-keywords-api.html" class="wiki_link">passes.js.collect-keywords</a></li><li><a href="passes.js.emit-form-api.html" class="wiki_link">passes.js.emit-form</a></li><li><a href="passes.js.infer-tag-api.html" class="wiki_link">passes.js.infer-tag</a></li><li><a href="passes.js.validate-api.html" class="wiki_link">passes.js.validate</a></li>
+        <li><a class="wiki_link" href="js-api.html">js</a></li><li><a class="wiki_link" href="passes.js.analyze-host-expr-api.html">passes.js.analyze-host-expr</a></li><li><a class="wiki_link" href="passes.js.annotate-tag-api.html">passes.js.annotate-tag</a></li><li><a class="wiki_link" href="passes.js.collect-keywords-api.html">passes.js.collect-keywords</a></li><li><a class="wiki_link" href="passes.js.emit-form-api.html">passes.js.emit-form</a></li><li><a class="wiki_link" href="passes.js.infer-tag-api.html">passes.js.infer-tag</a></li><li><a class="wiki_link" href="passes.js.validate-api.html">passes.js.validate</a></li>
       </ul>
     </div>
     
-    <a href="http://clojure.org" class="wiki_link">Clojure Home</a>
+    <a class="wiki_link" href="http://clojure.org">Clojure Home</a>
   </div>
 </div>
 </div>
       <div id="rightcolumn">
 	<div id="Content">
 	  <div class="contentBox"><div class="innerContentBox">
-              <div id="content_view" class="wiki wikiPage">
+              <div class="wiki wikiPage" id="content_view">
                 <div id="right-sidebar"><div id="toc">
   <h1 class="nopad">Table of Contents</h1>
-  <div style="margin-left: 1em;" class="toc-section">
-    <a href="#js" style="margin-top: 3px;">js</a>
+  <div class="toc-section" style="margin-left: 1em;">
+    <a style="margin-top: 3px;" href="#js">js</a>
     
-  </div><div style="margin-left: 1em;" class="toc-section">
-    <a href="#passes.js.analyze-host-expr" style="margin-top: 3px;">passes.js.analyze-host-expr</a>
+  </div><div class="toc-section" style="margin-left: 1em;">
+    <a style="margin-top: 3px;" href="#passes.js.analyze-host-expr">passes.js.analyze-host-expr</a>
     
-  </div><div style="margin-left: 1em;" class="toc-section">
-    <a href="#passes.js.annotate-tag" style="margin-top: 3px;">passes.js.annotate-tag</a>
+  </div><div class="toc-section" style="margin-left: 1em;">
+    <a style="margin-top: 3px;" href="#passes.js.annotate-tag">passes.js.annotate-tag</a>
     
-  </div><div style="margin-left: 1em;" class="toc-section">
-    <a href="#passes.js.collect-keywords" style="margin-top: 3px;">passes.js.collect-keywords</a>
+  </div><div class="toc-section" style="margin-left: 1em;">
+    <a style="margin-top: 3px;" href="#passes.js.collect-keywords">passes.js.collect-keywords</a>
     
-  </div><div style="margin-left: 1em;" class="toc-section">
-    <a href="#passes.js.emit-form" style="margin-top: 3px;">passes.js.emit-form</a>
+  </div><div class="toc-section" style="margin-left: 1em;">
+    <a style="margin-top: 3px;" href="#passes.js.emit-form">passes.js.emit-form</a>
     
-  </div><div style="margin-left: 1em;" class="toc-section">
-    <a href="#passes.js.infer-tag" style="margin-top: 3px;">passes.js.infer-tag</a>
+  </div><div class="toc-section" style="margin-left: 1em;">
+    <a style="margin-top: 3px;" href="#passes.js.infer-tag">passes.js.infer-tag</a>
     
-  </div><div style="margin-left: 1em;" class="toc-section">
-    <a href="#passes.js.validate" style="margin-top: 3px;">passes.js.validate</a>
+  </div><div class="toc-section" style="margin-left: 1em;">
+    <a style="margin-top: 3px;" href="#passes.js.validate">passes.js.validate</a>
     
   </div>
 </div>
@@ -81,91 +81,91 @@ namespace.
   <hr />
   <h2 id="js">js</h2>
   
-  <a href="js-api.html" id="api-link">Detailed API documentation</a><br />
+  <a id="api-link" href="js-api.html">Detailed API documentation</a><br />
   <pre id="namespace-docstr">Analyzer for clojurescript code, extends tools.analyzer with JS specific passes/forms</pre>
   
   
   
   Contents:
-  <span id="var-link"><a href="js-api.html#clojure.tools.analyzer.js/analyze" id="var-tag">analyze</a> </span><span id="var-link"><a href="js-api.html#clojure.tools.analyzer.js/analyze-ns" id="var-tag">analyze-ns</a> </span><span id="var-link"><a href="js-api.html#clojure.tools.analyzer.js/backup-env" id="var-tag">backup-env</a> </span><span id="var-link"><a href="js-api.html#clojure.tools.analyzer.js/cljs-env-&gt;env" id="var-tag">cljs-env-&gt;env</a> </span><span id="var-link"><a href="js-api.html#clojure.tools.analyzer.js/create-var" id="var-tag">create-var</a> </span><span id="var-link"><a href="js-api.html#clojure.tools.analyzer.js/default-passes" id="var-tag">default-passes</a> </span><span id="var-link"><a href="js-api.html#clojure.tools.analyzer.js/empty-env" id="var-tag">empty-env</a> </span><span id="var-link"><a href="js-api.html#clojure.tools.analyzer.js/parse" id="var-tag">parse</a> </span><span id="var-link"><a href="js-api.html#clojure.tools.analyzer.js/restore-env" id="var-tag">restore-env</a> </span><span id="var-link"><a href="js-api.html#clojure.tools.analyzer.js/run-passes" id="var-tag">run-passes</a> </span><span id="var-link"><a href="js-api.html#clojure.tools.analyzer.js/setup-rt!" id="var-tag">setup-rt!</a> </span><span id="var-link"><a href="js-api.html#clojure.tools.analyzer.js/specials" id="var-tag">specials</a> </span><br />
+  <span id="var-link"><a id="var-tag" href="js-api.html#clojure.tools.analyzer.js/analyze">analyze</a> </span><span id="var-link"><a id="var-tag" href="js-api.html#clojure.tools.analyzer.js/analyze-ns">analyze-ns</a> </span><span id="var-link"><a id="var-tag" href="js-api.html#clojure.tools.analyzer.js/backup-env">backup-env</a> </span><span id="var-link"><a id="var-tag" href="js-api.html#clojure.tools.analyzer.js/cljs-env-&gt;env">cljs-env-&gt;env</a> </span><span id="var-link"><a id="var-tag" href="js-api.html#clojure.tools.analyzer.js/create-var">create-var</a> </span><span id="var-link"><a id="var-tag" href="js-api.html#clojure.tools.analyzer.js/default-passes">default-passes</a> </span><span id="var-link"><a id="var-tag" href="js-api.html#clojure.tools.analyzer.js/empty-env">empty-env</a> </span><span id="var-link"><a id="var-tag" href="js-api.html#clojure.tools.analyzer.js/parse">parse</a> </span><span id="var-link"><a id="var-tag" href="js-api.html#clojure.tools.analyzer.js/restore-env">restore-env</a> </span><span id="var-link"><a id="var-tag" href="js-api.html#clojure.tools.analyzer.js/run-passes">run-passes</a> </span><span id="var-link"><a id="var-tag" href="js-api.html#clojure.tools.analyzer.js/setup-rt!">setup-rt!</a> </span><span id="var-link"><a id="var-tag" href="js-api.html#clojure.tools.analyzer.js/specials">specials</a> </span><br />
   
 </div><div id="namespace-entry">
   <br />
   <hr />
   <h2 id="passes.js.analyze-host-expr">passes.js.analyze-host-expr</h2>
   
-  <a href="passes.js.analyze-host-expr-api.html" id="api-link">Detailed API documentation</a><br />
+  <a id="api-link" href="passes.js.analyze-host-expr-api.html">Detailed API documentation</a><br />
   <pre id="namespace-docstr"></pre>
   
   
   
   Contents:
-  <span id="var-link"><a href="passes.js.analyze-host-expr-api.html#clojure.tools.analyzer.passes.js.analyze-host-expr/analyze-host-expr" id="var-tag">analyze-host-expr</a> </span><br />
+  <span id="var-link"><a id="var-tag" href="passes.js.analyze-host-expr-api.html#clojure.tools.analyzer.passes.js.analyze-host-expr/analyze-host-expr">analyze-host-expr</a> </span><br />
   
 </div><div id="namespace-entry">
   <br />
   <hr />
   <h2 id="passes.js.annotate-tag">passes.js.annotate-tag</h2>
   
-  <a href="passes.js.annotate-tag-api.html" id="api-link">Detailed API documentation</a><br />
+  <a id="api-link" href="passes.js.annotate-tag-api.html">Detailed API documentation</a><br />
   <pre id="namespace-docstr"></pre>
   
   
   
   Contents:
-  <span id="var-link"><a href="passes.js.annotate-tag-api.html#clojure.tools.analyzer.passes.js.annotate-tag/annotate-tag" id="var-tag">annotate-tag</a> </span><br />
+  <span id="var-link"><a id="var-tag" href="passes.js.annotate-tag-api.html#clojure.tools.analyzer.passes.js.annotate-tag/annotate-tag">annotate-tag</a> </span><br />
   
 </div><div id="namespace-entry">
   <br />
   <hr />
   <h2 id="passes.js.collect-keywords">passes.js.collect-keywords</h2>
   
-  <a href="passes.js.collect-keywords-api.html" id="api-link">Detailed API documentation</a><br />
+  <a id="api-link" href="passes.js.collect-keywords-api.html">Detailed API documentation</a><br />
   <pre id="namespace-docstr"></pre>
   
   
   
   Contents:
-  <span id="var-link"><a href="passes.js.collect-keywords-api.html#clojure.tools.analyzer.passes.js.collect-keywords/collect-keywords" id="var-tag">collect-keywords</a> </span><br />
+  <span id="var-link"><a id="var-tag" href="passes.js.collect-keywords-api.html#clojure.tools.analyzer.passes.js.collect-keywords/collect-keywords">collect-keywords</a> </span><br />
   
 </div><div id="namespace-entry">
   <br />
   <hr />
   <h2 id="passes.js.emit-form">passes.js.emit-form</h2>
   
-  <a href="passes.js.emit-form-api.html" id="api-link">Detailed API documentation</a><br />
+  <a id="api-link" href="passes.js.emit-form-api.html">Detailed API documentation</a><br />
   <pre id="namespace-docstr"></pre>
   
   
   
   Contents:
-  <span id="var-link"><a href="passes.js.emit-form-api.html#clojure.tools.analyzer.passes.js.emit-form/emit-form" id="var-tag">emit-form</a> </span><span id="var-link"><a href="passes.js.emit-form-api.html#clojure.tools.analyzer.passes.js.emit-form/emit-hygienic-form" id="var-tag">emit-hygienic-form</a> </span><br />
+  <span id="var-link"><a id="var-tag" href="passes.js.emit-form-api.html#clojure.tools.analyzer.passes.js.emit-form/emit-form">emit-form</a> </span><span id="var-link"><a id="var-tag" href="passes.js.emit-form-api.html#clojure.tools.analyzer.passes.js.emit-form/emit-hygienic-form">emit-hygienic-form</a> </span><br />
   
 </div><div id="namespace-entry">
   <br />
   <hr />
   <h2 id="passes.js.infer-tag">passes.js.infer-tag</h2>
   
-  <a href="passes.js.infer-tag-api.html" id="api-link">Detailed API documentation</a><br />
+  <a id="api-link" href="passes.js.infer-tag-api.html">Detailed API documentation</a><br />
   <pre id="namespace-docstr"></pre>
   
   
   
   Contents:
-  <span id="var-link"><a href="passes.js.infer-tag-api.html#clojure.tools.analyzer.passes.js.infer-tag/infer-tag" id="var-tag">infer-tag</a> </span><br />
+  <span id="var-link"><a id="var-tag" href="passes.js.infer-tag-api.html#clojure.tools.analyzer.passes.js.infer-tag/infer-tag">infer-tag</a> </span><br />
   
 </div><div id="namespace-entry">
   <br />
   <hr />
   <h2 id="passes.js.validate">passes.js.validate</h2>
   
-  <a href="passes.js.validate-api.html" id="api-link">Detailed API documentation</a><br />
+  <a id="api-link" href="passes.js.validate-api.html">Detailed API documentation</a><br />
   <pre id="namespace-docstr"></pre>
   
   
   
   Contents:
-  <span id="var-link"><a href="passes.js.validate-api.html#clojure.tools.analyzer.passes.js.validate/validate" id="var-tag">validate</a> </span><br />
+  <span id="var-link"><a id="var-tag" href="passes.js.validate-api.html#clojure.tools.analyzer.passes.js.validate/validate">validate</a> </span><br />
   
 </div>
 </div>
@@ -174,10 +174,10 @@ namespace.
           </div>
 	</div>
 	<div id="foot">
-	  <div style="text-align: center;" id="copyright">Copyright 2007-2014 by Rich Hickey and the various contributors</div>
+	  <div id="copyright" style="text-align: center;">Copyright 2007-2015 by Rich Hickey and the various contributors</div>
 	</div>
       </div>
-      <div id="DesignedBy">Logo &amp; site design by <a title="Visit Tom Hickey's website." href="http://www.tomhickey.com">Tom Hickey</a>.<br />
+      <div id="DesignedBy">Logo &amp; site design by <a href="http://www.tomhickey.com" title="Visit Tom Hickey's website.">Tom Hickey</a>.<br />
       Clojure auto-documentation system by Tom Faulhaber.</div>
     </div>
     <!-- /AllContentContainer -->
