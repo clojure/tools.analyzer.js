@@ -42,8 +42,9 @@
             [clojure.java.io :as io]
             [clojure.tools.reader :as reader]
             [clojure.tools.reader.reader-types :as readers])
-  (:import cljs.tagged_literals.JSValue)
-  (:alias c.c clojure.core))
+  (:import cljs.tagged_literals.JSValue))
+
+(alias 'c.c 'clojure.core)
 
 (def specials
   "Set of the special forms for clojurescript"
