@@ -2,6 +2,11 @@
 
 Provides js-specific passes for tools.analyzer
 
+# ABANDONED
+
+The last version of `tools.analyzer.js` works with a very ancient version of `clojurescript`.
+This project should be considered abandoned as the official maintainer doesn't have time to update it to a newer one.
+
 * [Example Usage](#example-usage)
 * [AST Quickref](#ast-quickref)
 * [Releases and Dependency Information](#releases-and-dependency-information)
@@ -9,10 +14,6 @@ Provides js-specific passes for tools.analyzer
 * [API Index](#api-index)
 * [Developer Information](#developer-information)
 * [License](#license)
-
-# OUTDATED
-
-The last version of `tools.analyzer.js` works with an ancient version of `clojurescript`, I plan on updating it in the future but don't have time to do so right now.
 
 ## Example Usage
 
