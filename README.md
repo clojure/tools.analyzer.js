@@ -2,7 +2,9 @@
 
 Provides js-specific passes for tools.analyzer
 
-# THIS PROJECT HAS BEEN ABANDONED
+# THIS PROJECT HAS BEEN ABANDONED, USE `cljs.analyzer` INSTEAD
+
+As of clojurescript 1.10.x, `cljs.analyzer` produces an AST in the same format as `tools.analyzer`.
 
 **The last version of `tools.analyzer.js` works with a very ancient version of `clojurescript`.
 This project should be considered abandoned and not be used as the official maintainer doesn't have time to update and maintain it.**
